@@ -1,0 +1,20 @@
+{
+  "name": "sarkari-naukri-alert-bot",
+  "version": "1.0.0",
+  "description": "Sarkari Naukri Alert Bot - Government Job Alert Telegram Bot",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mongodb": "^6.3.0",
+    "telegraf": "^4.16.3"
+  }
+}
