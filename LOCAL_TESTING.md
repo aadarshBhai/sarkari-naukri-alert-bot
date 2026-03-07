@@ -9,7 +9,7 @@ Before deploying to Render, test the bot locally to ensure everything works.
 ## Prerequisites
 
 - Node.js installed (v18 or higher)
-- PostgreSQL database (Supabase/Neon free tier)
+- MongoDB database (Local or MongoDB Atlas)
 - Telegram bot token from BotFather
 - Telegram channel created with bot as admin
 
@@ -31,7 +31,7 @@ Create a `.env` file in the root directory:
 ```env
 BOT_TOKEN=your_bot_token_here
 CHANNEL_USERNAME=@YourChannelUsername
-DATABASE_URL=postgresql://user:password@host:5432/database
+MONGODB_URI=mongodb://localhost:27017/telegram_bot
 ADMIN_TELEGRAM_ID=your_telegram_user_id
 WEBHOOK_URL=https://your-ngrok-url.ngrok.io
 PORT=3000
@@ -147,9 +147,9 @@ Webhook set successfully
 - Restart bot after changing .env
 
 ### "Database connection failed"
-- Verify DATABASE_URL is correct
-- Check if database is accessible
-- Ensure tables are created
+- Verify MONGODB_URI is correct
+- Ensure MongoDB service is running
+- Check firewall/network access if using Atlas
 
 ### "Not authorized" for admin commands
 - Verify ADMIN_TELEGRAM_ID matches your user ID

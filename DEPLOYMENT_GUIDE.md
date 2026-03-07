@@ -45,39 +45,27 @@ The complete bot codebase is ready with:
    - ✅ Invite users via link
 7. **Save the channel username** (e.g., @SarkariNaukriAlertOfficial)
 
-### Step 3: Create Free PostgreSQL Database (10 minutes)
+### Step 3: Create Free MongoDB Database (10 minutes)
 
-#### Option A: Supabase (Recommended)
+#### Option A: MongoDB Atlas (Recommended)
 
-1. Go to https://supabase.com
-2. Click "Start your project"
-3. Sign up with GitHub/Google
-4. Create new project:
-   - Name: `sarkari-naukri-bot`
-   - Database Password: (create a strong password)
-   - Region: Choose closest to you
-5. Wait 2-3 minutes for setup
-6. Go to **Settings** → **Database**
-7. Scroll to **Connection String** → **URI**
-8. Copy the connection string (looks like: `postgresql://postgres:[YOUR-PASSWORD]@...`)
-9. Replace `[YOUR-PASSWORD]` with your actual password
-10. **Save this DATABASE_URL**
+1. Go to [https://www.mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
+2. Click "Start Free" and sign up
+3. Create a new Project named `sarkari-naukri-bot`
+4. Click "Build a Cluster" -> "Free" (Shared)
+5. Choose a provider (e.g., AWS) and region
+6. Create a **Database User** (Username and Password) - **Save these!**
+7. In "Network Access", add `0.0.0.0/0` (Allow access from anywhere)
+8. Go to "Database" -> "Connect" -> "Drivers"
+9. Copy the **Connection String** (URI)
+10. Replace `<password>` with your actual password
+11. **Save this MONGODB_URI** (looks like: `mongodb+srv://user:pass@cluster.mongodb.net/Telegram?retryWrites=true&w=majority`)
 
-#### Option B: Neon (Alternative)
+### Step 4: Database is Automatic! (1 minute)
 
-1. Go to https://neon.tech
-2. Sign up with GitHub/Google
-3. Create new project: `sarkari-naukri-bot`
-4. Copy the connection string
-5. **Save this DATABASE_URL**
+Unlike PostgreSQL, MongoDB Atlas automatically creates the database and collections when the bot starts. No need to run any SQL!
 
-### Step 4: Initialize Database (5 minutes)
-
-1. Open your database dashboard (Supabase/Neon)
-2. Go to **SQL Editor** or **Query**
-3. Copy the contents of `src/database/schema.sql` from your project
-4. Paste and **Run** the SQL
-5. Verify tables created: `users`, `jobs`, `reminders`
+Just ensure your `MONGODB_URI` is correctly set in Render.
 
 ### Step 5: Deploy to Render (15 minutes)
 
@@ -177,9 +165,9 @@ The complete bot codebase is ready with:
 - Ensure channel is public
 
 ### Database errors?
-- Verify DATABASE_URL is correct
-- Check if tables are created
-- Run schema.sql again if needed
+- Verify MONGODB_URI is correct
+- Ensure your IP address is whitelisted in Atlas (0.0.0.0/0 recommended for Render)
+- Check if clusters are active
 
 ### Admin commands not working?
 - Verify ADMIN_TELEGRAM_ID matches your user ID
@@ -210,8 +198,8 @@ The complete bot codebase is ready with:
 
 Free tier limits:
 - **Render**: 750 hours/month, sleeps after 15 min inactivity
-- **Supabase**: 500MB database, 2GB bandwidth
-- **Neon**: 3GB storage, 100 hours compute
+- **MongoDB Atlas**: 512MB to 5GB storage on free tier
+- **Cloud Cron**: Free tier for trigger-reminders
 
 When to upgrade:
 - 5,000+ active users
@@ -235,8 +223,8 @@ If you encounter issues:
 - [ ] Created Telegram bot via BotFather
 - [ ] Created Telegram channel
 - [ ] Added bot as channel admin
-- [ ] Created Supabase/Neon database
-- [ ] Ran schema.sql to create tables
+- [ ] Created MongoDB Atlas database
+- [ ] Whitelisted 0.0.0.0/0 in MongoDB Atlas Settings
 - [ ] Created GitHub repository
 - [ ] Pushed code to GitHub
 - [ ] Deployed to Render

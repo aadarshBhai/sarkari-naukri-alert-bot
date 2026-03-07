@@ -1,6 +1,6 @@
 # 🏛️ Sarkari Naukri Alert Bot 2026
 
-A complete Telegram bot for Government Job Alerts built with Node.js, Telegraf, PostgreSQL, and Express.
+A complete Telegram bot for Government Job Alerts built with Node.js, Telegraf, MongoDB (Mongoose), and Express.
 
 ## ✨ Features
 
@@ -17,7 +17,7 @@ A complete Telegram bot for Government Job Alerts built with Node.js, Telegraf, 
 - **Node.js** (LTS)
 - **Telegraf** - Telegram Bot Framework
 - **Express** - Web server for webhooks
-- **PostgreSQL** - Database (Supabase/Neon free tier)
+- **MongoDB** - Database (MongoDB Atlas free tier)
 - **dotenv** - Environment configuration
 
 ## 🚀 Quick Start
@@ -37,19 +37,13 @@ A complete Telegram bot for Government Job Alerts built with Node.js, Telegraf, 
 3. Add your bot as **Administrator** to the channel
 4. Give bot permission to post messages
 
-### 3. Setup Database (Supabase Free Tier)
+### 3. Setup Database (MongoDB Atlas)
 
-1. Go to [supabase.com](https://supabase.com)
-2. Create a free account
-3. Create a new project
-4. Go to **Settings** > **Database**
-5. Copy the **Connection String** (URI format)
-6. Run the schema from `src/database/schema.sql` in SQL Editor
-
-**Alternative: Neon Database**
-1. Go to [neon.tech](https://neon.tech)
-2. Create free account and project
-3. Copy connection string
+1. Go to [mongodb.com/atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a free account and a new cluster
+3. Create a database user and whitelist `0.0.0.0/0` (Allow access from anywhere)
+4. Copy the **Connection String** (URI format)
+5. Save this as `MONGODB_URI`
 
 ### 4. Configure Environment
 
@@ -58,7 +52,7 @@ Create `.env` file in root directory:
 ```env
 BOT_TOKEN=your_bot_token_from_botfather
 CHANNEL_USERNAME=@SarkariNaukriAlertOfficial
-DATABASE_URL=your_postgresql_connection_string
+MONGODB_URI=your_mongodb_connection_string
 ADMIN_TELEGRAM_ID=your_telegram_user_id
 WEBHOOK_URL=https://your-app.onrender.com
 PORT=3000
@@ -189,7 +183,7 @@ This bot uses **webhook mode** (required for free hosting). Polling mode would k
 - Verify bot has permission to get chat member info
 
 ### Database connection failed
-- Verify DATABASE_URL is correct
+- Verify MONGODB_URI is correct
 - Check if database is accessible from Render/Railway
 - Ensure SSL is configured properly
 
@@ -251,7 +245,7 @@ When you reach 5-10k users:
 
 2. **Upgrade Database**
    - Supabase Pro ($25/month)
-   - Or dedicated PostgreSQL server
+   - Or dedicated MongoDB server
 
 3. **Add Redis**
    - For caching and session management
