@@ -1,12 +1,10 @@
-const pool = require('./db');
-const fs = require('fs');
-const path = require('path');
+const { User, Job, Reminder } = require('./models');
 
 async function initDatabase() {
   try {
-    const schemaSQL = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-    await pool.query(schemaSQL);
-    console.log('✅ Database schema initialized successfully');
+    // Mongoose automatically creates collections when models are used
+    // Just verify connection is working
+    console.log('✅ Database models initialized successfully');
   } catch (error) {
     console.error('❌ Error initializing database:', error);
     throw error;

@@ -1,50 +1,45 @@
-const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
-let db = null;
-let client = null;
+let isConnected = false;
 
 const connectDB = async () => {
   try {
-    if (db) return db;
+    if (isConnected) {
+      console.log('✅ MongoDB already connected');
+      return;
+    }
 
-    client = new MongoClient(process.env.MONGODB_URI, {
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI not defined in environment variables');
+    }
+
+    await mongoose.connect(mongoUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
 
-    await client.connect();
-    console.log('MongoDB connected successfully');
-    
-    db = client.db('sarkari_naukri_bot');
-    
-    // Create indexes for better performance
-    await db.collection('users').createIndex({ telegram_id: 1 }, { unique: true });
-    await db.collection('users').createIndex({ referral_code: 1 }, { unique: true });
-    await db.collection('jobs').createIndex({ created_at: -1 });
-    await db.collection('jobs').createIndex({ category: 1 });
-    await db.collection('jobs').createIndex({ state: 1 });
-    await db.collection('reminders').createIndex({ user_id: 1 });
-    await db.collection('reminders').createIndex({ reminder_date: 1 });
-    
-    return db;
+    isConnected = true;
+    console.log('✅ MongoDB connected successfully');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('❌ MongoDB connection error:', error.message);
     process.exit(1);
   }
 };
 
 const getDB = () => {
-  if (!db) {
+  if (!isConnected) {
     throw new Error('Database not initialized. Call connectDB first.');
   }
-  return db;
+  return mongoose.connection;
 };
 
 const closeDB = async () => {
-  if (client) {
-    await client.close();
-    console.log('MongoDB connection closed');
+  if (isConnected) {
+    await mongoose.disconnect();
+    isConnected = false;
+    console.log('✅ MongoDB connection closed');
   }
 };
 

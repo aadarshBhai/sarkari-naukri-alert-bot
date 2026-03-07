@@ -1,94 +1,105 @@
-const { getDB } = require('../database/db');
-const { ObjectId } = require('mongodb');
+const { Job } = require('../database/models');
 
 async function createJob(jobData) {
-  const db = getDB();
-  const {
-    title, organization, vacancies, qualification, age_limit,
-    start_date, last_date, category, state, official_link, description
-  } = jobData;
+  try {
+    const {
+      title, organization, vacancies, qualification, age_limit,
+      start_date, last_date, category, state, official_link, description
+    } = jobData;
 
-  const job = {
-    title,
-    organization,
-    vacancies,
-    qualification,
-    age_limit,
-    start_date: new Date(start_date),
-    last_date: new Date(last_date),
-    category,
-    state,
-    official_link,
-    description,
-    created_at: new Date()
-  };
+    const job = new Job({
+      title,
+      organization,
+      vacancies,
+      qualification,
+      age_limit,
+      start_date,
+      last_date,
+      category,
+      state,
+      official_link,
+      description
+    });
 
-  const result = await db.collection('jobs').insertOne(job);
-  return { ...job, _id: result.insertedId };
+    await job.save();
+    return job;
+  } catch (error) {
+    console.error('Error creating job:', error);
+    throw error;
+  }
 }
 
 async function getLatestJobs(limit = 5, offset = 0) {
-  const db = getDB();
-  return await db.collection('jobs')
-    .find({})
-    .sort({ created_at: -1 })
-    .skip(offset)
-    .limit(limit)
-    .toArray();
+  try {
+    return await Job.find().sort({ created_at: -1 }).limit(limit).skip(offset);
+  } catch (error) {
+    console.error('Error getting latest jobs:', error);
+    return [];
+  }
 }
 
 async function getJobsByCategory(category, limit = 5, offset = 0) {
-  const db = getDB();
-  return await db.collection('jobs')
-    .find({ category })
-    .sort({ created_at: -1 })
-    .skip(offset)
-    .limit(limit)
-    .toArray();
+  try {
+    return await Job.find({ category }).sort({ created_at: -1 }).limit(limit).skip(offset);
+  } catch (error) {
+    console.error('Error getting jobs by category:', error);
+    return [];
+  }
 }
 
 async function getJobsByState(state, limit = 5, offset = 0) {
-  const db = getDB();
-  return await db.collection('jobs')
-    .find({ state })
-    .sort({ created_at: -1 })
-    .skip(offset)
-    .limit(limit)
-    .toArray();
+  try {
+    return await Job.find({ state }).sort({ created_at: -1 }).limit(limit).skip(offset);
+  } catch (error) {
+    console.error('Error getting jobs by state:', error);
+    return [];
+  }
 }
 
 async function searchJobsByEligibility(age, qualification, state) {
-  const db = getDB();
-  const filter = {};
-
-  if (qualification) {
-    filter.qualification = { $regex: qualification, $options: 'i' };
+  try {
+    const filter = {};
+    
+    if (qualification) {
+      filter.qualification = { $regex: qualification, $options: 'i' };
+    }
+    
+    if (state) {
+      filter.state = state;
+    }
+    
+    return await Job.find(filter).sort({ created_at: -1 }).limit(10);
+  } catch (error) {
+    console.error('Error searching jobs by eligibility:', error);
+    return [];
   }
-
-  if (state) {
-    filter.state = state;
-  }
-
-  return await db.collection('jobs')
-    .find(filter)
-    .sort({ created_at: -1 })
-    .limit(10)
-    .toArray();
 }
 
 async function getJobById(jobId) {
-  const db = getDB();
-  return await db.collection('jobs').findOne({ _id: new ObjectId(jobId) });
+  try {
+    return await Job.findById(jobId);
+  } catch (error) {
+    console.error('Error getting job by id:', error);
+    return null;
+  }
 }
 
 async function deleteJob(jobId) {
-  const db = getDB();
-  await db.collection('jobs').deleteOne({ _id: new ObjectId(jobId) });
+  try {
+    await Job.findByIdAndDelete(jobId);
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    throw error;
+  }
 }
 
 async function getTotalJobs() {
-  const db = getDB();
-  return await db.collection('jobs').countDocuments();
+  try {
+    return await Job.countDocuments();
+  } catch (error) {
+    console.error('Error getting total jobs:', error);
+    return 0;
+  }
 }
 
 module.exports = {
