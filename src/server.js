@@ -1,8 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const bot = require('./bot');
 const { connectDB } = require('./database/db');
 const { getPendingReminders, markReminderSent } = require('./services/reminderService');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
