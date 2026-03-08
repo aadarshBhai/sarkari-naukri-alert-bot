@@ -154,6 +154,30 @@ async function scrapeSarkariResult() {
           else if (titleLower.includes('teacher') || titleLower.includes('tet') || titleLower.includes('tgt') || titleLower.includes('pgt')) category = 'Teaching';
           else if (titleLower.includes('army') || titleLower.includes('navy') || titleLower.includes('airforce') || titleLower.includes('defence') || titleLower.includes('nda') || titleLower.includes('cds')) category = 'Defence';
 
+          // Guess State from title
+          let state = 'All India';
+          if (titleLower.includes('up ') || titleLower.includes('uttar pradesh')) state = 'Uttar Pradesh';
+          else if (titleLower.includes('bihar')) state = 'Bihar';
+          else if (titleLower.includes('mp ') || titleLower.includes('madhya pradesh')) state = 'Madhya Pradesh';
+          else if (titleLower.includes('rajasthan')) state = 'Rajasthan';
+          else if (titleLower.includes('haryana')) state = 'Haryana';
+          else if (titleLower.includes('delhi')) state = 'Delhi';
+          else if (titleLower.includes('punjab')) state = 'Punjab';
+          else if (titleLower.includes('jharkhand')) state = 'Jharkhand';
+          else if (titleLower.includes('uk ') || titleLower.includes('uttarakhand')) state = 'Uttarakhand';
+          else if (titleLower.includes('bihar')) state = 'Bihar';
+          else if (titleLower.includes('chhattisgarh')) state = 'Chhattisgarh';
+          else if (titleLower.includes('gujarat')) state = 'Gujarat';
+          else if (titleLower.includes('maharashtra')) state = 'Maharashtra';
+          else if (titleLower.includes('karnataka')) state = 'Karnataka';
+          else if (titleLower.includes('kerala')) state = 'Kerala';
+          else if (titleLower.includes('tamil nadu')) state = 'Tamil Nadu';
+          else if (titleLower.includes('andhra pradesh')) state = 'Andhra Pradesh';
+          else if (titleLower.includes('telangana')) state = 'Telangana';
+          else if (titleLower.includes('odisha')) state = 'Odisha';
+          else if (titleLower.includes('west bengal')) state = 'West Bengal';
+          else if (titleLower.includes('assam')) state = 'Assam';
+
           const jobData = {
             title: item.title,
             organization: org,
@@ -164,7 +188,7 @@ async function scrapeSarkariResult() {
             vacancies: details.vacancies,
             qualification: qual,
             category: category,
-            state: 'All India'
+            state: state
           };
 
           const newJob = await createJob(jobData);
