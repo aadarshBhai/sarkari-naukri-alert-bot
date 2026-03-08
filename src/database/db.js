@@ -10,8 +10,8 @@ const connectDB = async () => {
       return;
     }
 
-    // Load from .env explicitly to ensure variables are present
-    require('dotenv').config();
+    // Force load from .env to override any system variables
+    require('dotenv').config({ override: true });
 
     const mongoUri = process.env.MONGODB_URI || process.env.DATABASE_URL;
     
@@ -20,14 +20,20 @@ const connectDB = async () => {
       throw new Error('Database URI not found in environment variables');
     }
 
-    // Log which variable we're using (masked)
-    const maskedUri = mongoUri.replace(/:([^@]+)@/, ':****@').split('@')[1] || 'localhost';
-    console.log(`📡 Attempting to connect to MongoDB: ${maskedUri}`);
+    // Debug log to see what URI is being used (safely)
+    let maskedUri = "unknown";
+    if (mongoUri.includes('@')) {
+      maskedUri = mongoUri.split('@')[1];
+    } else {
+      maskedUri = mongoUri; // Likely localhost or a local string
+    }
+    
+    console.log(`📡 Connecting to: ${maskedUri}`);
 
     await mongoose.connect(mongoUri);
 
     isConnected = true;
-    console.log('✅ MongoDB connected successfully');
+    console.log('✅ MongoDB connected successfully to "Telegram" database');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
     process.exit(1);

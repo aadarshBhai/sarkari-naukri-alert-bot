@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const express = require('express');
 const bot = require('./bot');
 const { connectDB } = require('./database/db');
