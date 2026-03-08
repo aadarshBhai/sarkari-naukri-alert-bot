@@ -6,14 +6,30 @@ function formatJob(job) {
   const typeEmoji = job.job_type === 'admit_card' ? '📄' : (job.job_type === 'result' ? '📊' : '🔥');
   const typeLabel = job.job_type === 'admit_card' ? 'ADMIT CARD' : (job.job_type === 'result' ? 'RESULT' : 'NEW JOB');
 
-  return `${typeEmoji} **${typeLabel}: ${job.title.toUpperCase()}**\n\n` +
-    `🏛️ **Organization:** ${job.organization}\n` +
-    `👥 **Vacancies:** ${job.vacancies || 'Notification Dekhein'}\n` +
-    `🎓 **Qualification:** ${job.qualification || 'As per norms'}\n` +
-    `📅 **Last Date:** ${job.last_date ? new Date(job.last_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Jald hi'}\n` +
-    `📍 **Location:** ${job.state || 'All India'}\n\n` +
-    `🔗 **Official Link:** ${job.official_link}\n\n` +
-    `📢 **Join @sarakariresul for more alerts!**`;
+  // Simple escaping for HTML
+  const escape = (str) => String(str).replace(/[&<>"']/g, (m) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[m]));
+
+  const title = escape(job.title.toUpperCase());
+  const org = escape(job.organization);
+  const vac = escape(job.vacancies || 'Notification Dekhein');
+  const qual = escape(job.qualification || 'As per norms');
+  const loc = escape(job.state || 'All India');
+  const link = escape(job.official_link);
+  
+  const lastDate = job.last_date 
+    ? new Date(job.last_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) 
+    : 'Jald hi';
+
+  return `<b>${typeEmoji} ${typeLabel}: ${title}</b>\n\n` +
+    `🏛️ <b>Organization:</b> ${org}\n` +
+    `👥 <b>Vacancies:</b> ${vac}\n` +
+    `🎓 <b>Qualification:</b> ${qual}\n` +
+    `📅 <b>Last Date:</b> ${lastDate}\n` +
+    `📍 <b>Location:</b> ${loc}\n\n` +
+    `🔗 <b>Official Link:</b> <a href="${link}">Click Here</a>\n\n` +
+    `📢 <b>Join @sarkariresul for more alerts!</b>`;
 }
 
 function getJobButtons(jobId, page, totalPages, context) {
@@ -54,7 +70,7 @@ async function handleLatestJobs(ctx, page = 0) {
     for (const job of jobs) {
       const message = formatJob(job);
       await ctx.reply(message, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...getJobButtons(job.id, page, totalPages, 'latest')
       });
     }
@@ -101,7 +117,7 @@ async function handleCategoryJobs(ctx, category, page = 0) {
     for (const job of jobs) {
       const message = formatJob(job);
       await ctx.reply(message, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...getJobButtons(job.id, page, totalPages, `category_${category}`)
       });
     }
@@ -150,7 +166,7 @@ async function handleStateJobsList(ctx, state, page = 0) {
     for (const job of jobs) {
       const message = formatJob(job);
       await ctx.reply(message, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...getJobButtons(job.id, page, totalPages, `state_${state.replace(/ /g, '_').toLowerCase()}`)
       });
     }
@@ -170,7 +186,7 @@ async function handleAdmitCards(ctx, page = 0) {
     const totalPages = Math.ceil(await getTotalJobsByType('admit_card') / 5);
     for (const job of jobs) {
       await ctx.reply(formatJob(job), {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...getJobButtons(job.id, page, totalPages, 'admit_card')
       });
     }
@@ -190,7 +206,7 @@ async function handleResults(ctx, page = 0) {
     const totalPages = Math.ceil(await getTotalJobsByType('result') / 5);
     for (const job of jobs) {
       await ctx.reply(formatJob(job), {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...getJobButtons(job.id, page, totalPages, 'result')
       });
     }
@@ -216,7 +232,7 @@ async function handleEligibilityResults(ctx, qualification) {
     await ctx.reply(`🔍 Results for ${qualification}:`);
     for (const job of jobs) {
       await ctx.reply(formatJob(job), {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         ...getJobButtons(job.id, 0, 1, 'latest')
       });
     }
