@@ -32,7 +32,10 @@ async function createJob(jobData) {
 
 async function getLatestJobs(limit = 5, offset = 0) {
   try {
-    return await Job.find({ job_type: 'job' }).sort({ created_at: -1 }).limit(limit).skip(offset);
+    // Include jobs with 'job' type OR no type at all (for existing data)
+    return await Job.find({ 
+      $or: [{ job_type: 'job' }, { job_type: { $exists: false } }] 
+    }).sort({ created_at: -1 }).limit(limit).skip(offset);
   } catch (error) {
     console.error('Error getting latest jobs:', error);
     return [];
@@ -50,7 +53,10 @@ async function getJobsByType(type, limit = 5, offset = 0) {
 
 async function getJobsByCategory(category, limit = 5, offset = 0) {
   try {
-    return await Job.find({ category }).sort({ created_at: -1 }).limit(limit).skip(offset);
+    // Case-insensitive search for category
+    return await Job.find({ 
+      category: { $regex: new RegExp(`^${category}$`, 'i') } 
+    }).sort({ created_at: -1 }).limit(limit).skip(offset);
   } catch (error) {
     console.error('Error getting jobs by category:', error);
     return [];
@@ -59,7 +65,10 @@ async function getJobsByCategory(category, limit = 5, offset = 0) {
 
 async function getJobsByState(state, limit = 5, offset = 0) {
   try {
-    return await Job.find({ state }).sort({ created_at: -1 }).limit(limit).skip(offset);
+    // Case-insensitive search for state
+    return await Job.find({ 
+      state: { $regex: new RegExp(`^${state}$`, 'i') } 
+    }).sort({ created_at: -1 }).limit(limit).skip(offset);
   } catch (error) {
     console.error('Error getting jobs by state:', error);
     return [];
@@ -105,7 +114,9 @@ async function deleteJob(jobId) {
 
 async function getTotalJobs() {
   try {
-    return await Job.countDocuments({ job_type: 'job' });
+    return await Job.countDocuments({ 
+      $or: [{ job_type: 'job' }, { job_type: { $exists: false } }] 
+    });
   } catch (error) {
     console.error('Error getting total jobs:', error);
     return 0;
@@ -123,7 +134,9 @@ async function getTotalJobsByType(type) {
 
 async function getTotalJobsByCategory(category) {
   try {
-    return await Job.countDocuments({ category });
+    return await Job.countDocuments({ 
+      category: { $regex: new RegExp(`^${category}$`, 'i') } 
+    });
   } catch (error) {
     console.error('Error getting total jobs by category:', error);
     return 0;
@@ -132,7 +145,9 @@ async function getTotalJobsByCategory(category) {
 
 async function getTotalJobsByState(state) {
   try {
-    return await Job.countDocuments({ state });
+    return await Job.countDocuments({ 
+      state: { $regex: new RegExp(`^${state}$`, 'i') } 
+    });
   } catch (error) {
     console.error('Error getting total jobs by state:', error);
     return 0;

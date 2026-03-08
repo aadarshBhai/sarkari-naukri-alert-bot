@@ -3,12 +3,17 @@ const { getLatestJobs, getJobsByCategory, getJobsByState, getTotalJobs, getTotal
 const { getMainMenu } = require('./startController');
 
 function formatJob(job) {
-  return `📌 **${job.title}**\n\n` +
-    `🏛️ Organization: ${job.organization}\n` +
-    `📅 Last Date: ${job.last_date ? new Date(job.last_date).toLocaleDateString('en-IN') : 'N/A'}\n` +
-    `🎓 Qualification: ${job.qualification || 'N/A'}\n` +
-    `📍 State: ${job.state || 'All India'}\n` +
-    `🔗 Link: ${job.official_link || 'N/A'}`;
+  const typeEmoji = job.job_type === 'admit_card' ? '📄' : (job.job_type === 'result' ? '📊' : '🔥');
+  const typeLabel = job.job_type === 'admit_card' ? 'ADMIT CARD' : (job.job_type === 'result' ? 'RESULT' : 'NEW JOB');
+
+  return `${typeEmoji} **${typeLabel}: ${job.title.toUpperCase()}**\n\n` +
+    `🏛️ **Organization:** ${job.organization}\n` +
+    `👥 **Vacancies:** ${job.vacancies || 'Notification Dekhein'}\n` +
+    `🎓 **Qualification:** ${job.qualification || 'As per norms'}\n` +
+    `📅 **Last Date:** ${job.last_date ? new Date(job.last_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Jald hi'}\n` +
+    `📍 **Location:** ${job.state || 'All India'}\n\n` +
+    `🔗 **Official Link:** ${job.official_link}\n\n` +
+    `📢 **Join @sarakariresul for more alerts!**`;
 }
 
 function getJobButtons(jobId, page, totalPages, context) {
