@@ -69,12 +69,13 @@ async function start() {
     await connectDB();
     console.log('✅ Database initialized');
 
-    // Set webhook
-    if (WEBHOOK_URL) {
+    // Set webhook (Production) or Polling (Local)
+    if (process.env.NODE_ENV === 'production' && WEBHOOK_URL) {
       await bot.telegram.setWebhook(`${WEBHOOK_URL}/webhook`);
       console.log(`✅ Webhook set to: ${WEBHOOK_URL}/webhook`);
     } else {
-      console.log('⚠️ No WEBHOOK_URL provided. Bot will not receive updates.');
+      console.log('🤖 Starting in Polling mode (Local)...');
+      bot.launch(); // Start polling
     }
 
     // Start Express server

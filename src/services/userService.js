@@ -6,22 +6,25 @@ function generateReferralCode(telegramId) {
 
 async function createUser(telegramId, referredBy = null) {
   try {
-    const referralCode = generateReferralCode(telegramId);
-    
     let user = await User.findOne({ telegram_id: telegramId });
     if (user) {
       return user;
     }
     
+    const referralCode = generateReferralCode(telegramId);
+    
     user = new User({
       telegram_id: telegramId,
       referral_code: referralCode,
-      referred_by: referredBy
+      referred_by: referredBy ? referredBy.toString() : null
     });
     
     await user.save();
     return user;
   } catch (error) {
+    if (error.code === 11000) {
+      return await User.findOne({ telegram_id: telegramId });
+    }
     console.error('Error creating user:', error);
     throw error;
   }
