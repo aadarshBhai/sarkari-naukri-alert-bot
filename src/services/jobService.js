@@ -10,6 +10,7 @@ async function createJob(jobData) {
     const job = new Job({
       title,
       organization,
+      job_type: jobData.job_type || 'job',
       vacancies,
       qualification,
       age_limit,
@@ -31,9 +32,18 @@ async function createJob(jobData) {
 
 async function getLatestJobs(limit = 5, offset = 0) {
   try {
-    return await Job.find().sort({ created_at: -1 }).limit(limit).skip(offset);
+    return await Job.find({ job_type: 'job' }).sort({ created_at: -1 }).limit(limit).skip(offset);
   } catch (error) {
     console.error('Error getting latest jobs:', error);
+    return [];
+  }
+}
+
+async function getJobsByType(type, limit = 5, offset = 0) {
+  try {
+    return await Job.find({ job_type: type }).sort({ created_at: -1 }).limit(limit).skip(offset);
+  } catch (error) {
+    console.error('Error getting jobs by type:', error);
     return [];
   }
 }
@@ -95,9 +105,18 @@ async function deleteJob(jobId) {
 
 async function getTotalJobs() {
   try {
-    return await Job.countDocuments();
+    return await Job.countDocuments({ job_type: 'job' });
   } catch (error) {
     console.error('Error getting total jobs:', error);
+    return 0;
+  }
+}
+
+async function getTotalJobsByType(type) {
+  try {
+    return await Job.countDocuments({ job_type: type });
+  } catch (error) {
+    console.error('Error getting total jobs by type:', error);
     return 0;
   }
 }
@@ -130,5 +149,7 @@ module.exports = {
   deleteJob,
   getTotalJobs,
   getTotalJobsByCategory,
-  getTotalJobsByState
+  getTotalJobsByState,
+  getJobsByType,
+  getTotalJobsByType
 };

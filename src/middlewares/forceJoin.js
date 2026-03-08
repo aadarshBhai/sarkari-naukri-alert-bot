@@ -10,21 +10,21 @@ async function checkMembership(ctx, next) {
 
     if (validStatuses.includes(member.status)) {
       return next();
-    } else {
-      await ctx.reply(
-        '⚠️ Bot use karne ke liye pehle official channel join karein.\n\n👇 Niche diye gaye button se channel join karein:',
-        Markup.inlineKeyboard([
-          [Markup.button.url('🔔 Join Channel', `https://t.me/${channelUsername.replace('@', '')}`)],
-          [Markup.button.callback('✅ I Have Joined', 'verify_join')]
-        ])
-      );
     }
+    
+    await ctx.reply(
+      '⚠️ Bot use karne ke liye pehle official channel join karein.\n\n👇 Niche diye gaye button se channel join karein:',
+      Markup.inlineKeyboard([
+        [Markup.button.url('🔔 Join Channel', `https://t.me/${channelUsername.replace('@', '')}`)],
+        [Markup.button.callback('✅ I Have Joined', 'verify_join')]
+      ])
+    );
   } catch (error) {
-    console.error('Error checking membership:', error);
+    console.error(`Error checking membership for ${channelUsername}:`, error.message);
     
     if (error.response && error.response.error_code === 400) {
       await ctx.reply(
-        '⚠️ Bot ko channel mein admin banana zaroori hai.\n\nKripya admin se sampark karein.'
+        `⚠️ Error: Bot ko channel [${channelUsername}] mein admin banana zaroori hai.\n\nKripya check karein:\n1. Bot channel mein Admin hai.\n2. Channel Username sahi hai.`
       );
     } else {
       await ctx.reply(

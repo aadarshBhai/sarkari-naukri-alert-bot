@@ -5,8 +5,8 @@ const adminSessions = new Map();
 
 async function handleAddJob(ctx) {
   const userId = ctx.from.id;
-  adminSessions.set(userId, { step: 'title', data: {} });
-  await ctx.reply('📝 Job Title enter karein:');
+  adminSessions.set(userId, { step: 'type', data: {} });
+  await ctx.reply('📝 Job ka type chunein (job / admit_card / result):');
 }
 
 async function handleAdminMessage(ctx) {
@@ -15,9 +15,19 @@ async function handleAdminMessage(ctx) {
   
   if (!session) return;
 
-  const text = ctx.message.text;
+  const text = ctx.message.text.toLowerCase().trim();
   
   switch (session.step) {
+    case 'type':
+      if (!['job', 'admit_card', 'result'].includes(text)) {
+        await ctx.reply('⚠️ Invalid type! Kripya "job", "admit_card" ya "result" enter karein:');
+        return;
+      }
+      session.data.job_type = text;
+      session.step = 'title';
+      await ctx.reply('📝 Job Title enter karein:');
+      break;
+
     case 'title':
       session.data.title = text;
       session.step = 'organization';

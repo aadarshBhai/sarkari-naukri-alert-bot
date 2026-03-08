@@ -6,7 +6,7 @@ const { rateLimit } = require('./middlewares/rateLimit');
 const { isAdmin } = require('./middlewares/adminAuth');
 
 const { handleStart, handleVerifyJoin, getMainMenu } = require('./controllers/startController');
-const { handleLatestJobs, handleSearchByExam, handleCategoryJobs, handleStateJobs, handleStateJobsList } = require('./controllers/jobController');
+const { handleLatestJobs, handleSearchByExam, handleCategoryJobs, handleStateJobs, handleStateJobsList, handleEligibilityChecker, handleAdmitCards, handleResults, handleEligibilityResults } = require('./controllers/jobController');
 const { handleReferEarn } = require('./controllers/referralController');
 const { handleRemindMe } = require('./controllers/reminderController');
 const { handleAddJob, handleAdminMessage, handleStats, adminSessions } = require('./controllers/adminController');
@@ -83,19 +83,37 @@ bot.action(/^state_([a-z_]+)_page_(\d+)$/, checkMembership, async (ctx) => {
 // Eligibility checker
 bot.action('eligibility_checker', checkMembership, async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.reply('🔍 Eligibility Checker feature coming soon!', getMainMenu());
+  await handleEligibilityChecker(ctx);
+});
+
+bot.action(/^eligibility_(.+)$/, checkMembership, async (ctx) => {
+  const qualification = ctx.match[1].replace(/_/g, ' ');
+  await ctx.answerCbQuery();
+  await handleEligibilityResults(ctx, qualification);
 });
 
 // Admit cards
 bot.action('admit_cards', checkMembership, async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.reply('📄 Admit Card Updates feature coming soon!', getMainMenu());
+  await handleAdmitCards(ctx, 0);
+});
+
+bot.action(/^admit_card_page_(\d+)$/, checkMembership, async (ctx) => {
+  const page = parseInt(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await handleAdmitCards(ctx, page);
 });
 
 // Results
 bot.action('results', checkMembership, async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.reply('📊 Results Updates feature coming soon!', getMainMenu());
+  await handleResults(ctx, 0);
+});
+
+bot.action(/^result_page_(\d+)$/, checkMembership, async (ctx) => {
+  const page = parseInt(ctx.match[1]);
+  await ctx.answerCbQuery();
+  await handleResults(ctx, page);
 });
 
 // Refer & Earn

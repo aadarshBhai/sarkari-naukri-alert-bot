@@ -1,5 +1,5 @@
 const { Markup } = require('telegraf');
-const { getLatestJobs, getJobsByCategory, getJobsByState, getTotalJobs, getTotalJobsByCategory, getTotalJobsByState } = require('../services/jobService');
+const { getLatestJobs, getJobsByCategory, getJobsByState, getTotalJobs, getTotalJobsByCategory, getTotalJobsByState, getJobsByType, getTotalJobsByType, searchJobsByEligibility } = require('../services/jobService');
 const { getMainMenu } = require('./startController');
 
 function formatJob(job) {
@@ -155,12 +155,81 @@ async function handleStateJobsList(ctx, state, page = 0) {
   }
 }
 
+async function handleAdmitCards(ctx, page = 0) {
+  try {
+    const jobs = await getJobsByType('admit_card', 5, page * 5);
+    if (jobs.length === 0) {
+      await ctx.reply('Abhi koi Admit Card updates nahi hai.', getMainMenu());
+      return;
+    }
+    const totalPages = Math.ceil(await getTotalJobsByType('admit_card') / 5);
+    for (const job of jobs) {
+      await ctx.reply(formatJob(job), {
+        parse_mode: 'Markdown',
+        ...getJobButtons(job.id, page, totalPages, 'admit_card')
+      });
+    }
+  } catch (error) {
+    console.error('Error loading admit cards:', error);
+    await ctx.reply('⚠️ Error loading admit cards.');
+  }
+}
+
+async function handleResults(ctx, page = 0) {
+  try {
+    const jobs = await getJobsByType('result', 5, page * 5);
+    if (jobs.length === 0) {
+      await ctx.reply('Abhi koi Result updates nahi hai.', getMainMenu());
+      return;
+    }
+    const totalPages = Math.ceil(await getTotalJobsByType('result') / 5);
+    for (const job of jobs) {
+      await ctx.reply(formatJob(job), {
+        parse_mode: 'Markdown',
+        ...getJobButtons(job.id, page, totalPages, 'result')
+      });
+    }
+  } catch (error) {
+    console.error('Error loading results:', error);
+    await ctx.reply('⚠️ Error loading results.');
+  }
+}
+
+async function handleEligibilityChecker(ctx) {
+  const options = [['10th Pass', '12th Pass'], ['Graduate', 'Post Graduate'], ['🏠 Main Menu']];
+  const keyboard = options.map(row => row.map(opt => Markup.button.callback(opt, opt === '🏠 Main Menu' ? 'main_menu' : `eligibility_${opt.toLowerCase().replace(' ', '_')}`)));
+  await ctx.reply('🔍 Apni highest qualification chunein:', Markup.inlineKeyboard(keyboard));
+}
+
+async function handleEligibilityResults(ctx, qualification) {
+  try {
+    const jobs = await searchJobsByEligibility(null, qualification, null);
+    if (jobs.length === 0) {
+      await ctx.reply(`Aapki qualification (${qualification}) ke liye abhi koi job available nahi hai.`, getMainMenu());
+      return;
+    }
+    await ctx.reply(`🔍 Results for ${qualification}:`);
+    for (const job of jobs) {
+      await ctx.reply(formatJob(job), {
+        parse_mode: 'Markdown',
+        ...getJobButtons(job.id, 0, 1, 'latest')
+      });
+    }
+  } catch (error) {
+    console.error('Error checking eligibility:', error);
+  }
+}
+
 module.exports = {
   handleLatestJobs,
   handleSearchByExam,
   handleCategoryJobs,
   handleStateJobs,
   handleStateJobsList,
+  handleAdmitCards,
+  handleResults,
+  handleEligibilityChecker,
+  handleEligibilityResults,
   formatJob,
   getJobButtons
 };

@@ -29,6 +29,11 @@ const jobSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  job_type: {
+    type: String,
+    enum: ['job', 'admit_card', 'result'],
+    default: 'job',
+  },
   vacancies: String,
   qualification: String,
   age_limit: String,
