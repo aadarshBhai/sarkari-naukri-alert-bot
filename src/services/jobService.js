@@ -102,6 +102,24 @@ async function getTotalJobs() {
   }
 }
 
+async function getTotalJobsByCategory(category) {
+  try {
+    return await Job.countDocuments({ category });
+  } catch (error) {
+    console.error('Error getting total jobs by category:', error);
+    return 0;
+  }
+}
+
+async function getTotalJobsByState(state) {
+  try {
+    return await Job.countDocuments({ state });
+  } catch (error) {
+    console.error('Error getting total jobs by state:', error);
+    return 0;
+  }
+}
+
 module.exports = {
   createJob,
   getLatestJobs,
@@ -110,5 +128,7 @@ module.exports = {
   searchJobsByEligibility,
   getJobById,
   deleteJob,
-  getTotalJobs
+  getTotalJobs,
+  getTotalJobsByCategory,
+  getTotalJobsByState
 };

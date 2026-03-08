@@ -1,5 +1,5 @@
 const { Markup } = require('telegraf');
-const { getLatestJobs, getJobsByCategory, getJobsByState } = require('../services/jobService');
+const { getLatestJobs, getJobsByCategory, getJobsByState, getTotalJobs, getTotalJobsByCategory, getTotalJobsByState } = require('../services/jobService');
 const { getMainMenu } = require('./startController');
 
 function formatJob(job) {
@@ -44,7 +44,7 @@ async function handleLatestJobs(ctx, page = 0) {
       return;
     }
 
-    const totalPages = Math.ceil(await require('../services/jobService').getTotalJobs() / 5);
+    const totalPages = Math.ceil(await getTotalJobs() / 5);
     
     for (const job of jobs) {
       const message = formatJob(job);
@@ -91,7 +91,7 @@ async function handleCategoryJobs(ctx, category, page = 0) {
       return;
     }
 
-    const totalPages = Math.ceil(jobs.length / 5);
+    const totalPages = Math.ceil(await getTotalJobsByCategory(category) / 5);
     
     for (const job of jobs) {
       const message = formatJob(job);
@@ -131,11 +131,36 @@ async function handleStateJobs(ctx) {
   );
 }
 
+async function handleStateJobsList(ctx, state, page = 0) {
+  try {
+    const jobs = await getJobsByState(state, 5, page * 5);
+    
+    if (jobs.length === 0) {
+      await ctx.reply(`${state} mein abhi koi job nahi hai.`, getMainMenu());
+      return;
+    }
+
+    const totalPages = Math.ceil(await getTotalJobsByState(state) / 5);
+    
+    for (const job of jobs) {
+      const message = formatJob(job);
+      await ctx.reply(message, {
+        parse_mode: 'Markdown',
+        ...getJobButtons(job.id, page, totalPages, `state_${state.replace(/ /g, '_').toLowerCase()}`)
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching state jobs:', error);
+    await ctx.reply('⚠️ Error loading jobs. Kripya dobara try karein.');
+  }
+}
+
 module.exports = {
   handleLatestJobs,
   handleSearchByExam,
   handleCategoryJobs,
   handleStateJobs,
+  handleStateJobsList,
   formatJob,
   getJobButtons
 };

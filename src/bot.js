@@ -6,7 +6,7 @@ const { rateLimit } = require('./middlewares/rateLimit');
 const { isAdmin } = require('./middlewares/adminAuth');
 
 const { handleStart, handleVerifyJoin, getMainMenu } = require('./controllers/startController');
-const { handleLatestJobs, handleSearchByExam, handleCategoryJobs, handleStateJobs } = require('./controllers/jobController');
+const { handleLatestJobs, handleSearchByExam, handleCategoryJobs, handleStateJobs, handleStateJobsList } = require('./controllers/jobController');
 const { handleReferEarn } = require('./controllers/referralController');
 const { handleRemindMe } = require('./controllers/reminderController');
 const { handleAddJob, handleAdminMessage, handleStats, adminSessions } = require('./controllers/adminController');
@@ -36,7 +36,7 @@ bot.action('latest_jobs', checkMembership, async (ctx) => {
   await handleLatestJobs(ctx, 0);
 });
 
-bot.action(/latest_page_(\d+)/, checkMembership, async (ctx) => {
+bot.action(/^latest_page_(\d+)$/, checkMembership, async (ctx) => {
   const page = parseInt(ctx.match[1]);
   await ctx.answerCbQuery();
   await handleLatestJobs(ctx, page);
@@ -48,13 +48,13 @@ bot.action('search_exam', checkMembership, async (ctx) => {
   await handleSearchByExam(ctx);
 });
 
-bot.action(/category_(.+)/, checkMembership, async (ctx) => {
+bot.action(/^category_([a-z0-9_]+)$/, checkMembership, async (ctx) => {
   const category = ctx.match[1];
   await ctx.answerCbQuery();
   await handleCategoryJobs(ctx, category, 0);
 });
 
-bot.action(/category_(.+)_page_(\d+)/, checkMembership, async (ctx) => {
+bot.action(/^category_([a-z0-9_]+)_page_(\d+)$/, checkMembership, async (ctx) => {
   const category = ctx.match[1];
   const page = parseInt(ctx.match[2]);
   await ctx.answerCbQuery();
@@ -67,23 +67,17 @@ bot.action('state_jobs', checkMembership, async (ctx) => {
   await handleStateJobs(ctx);
 });
 
-bot.action(/state_(.+)/, checkMembership, async (ctx) => {
+bot.action(/^state_([a-z_]+)$/, checkMembership, async (ctx) => {
   const state = ctx.match[1].replace(/_/g, ' ');
   await ctx.answerCbQuery();
-  const { getJobsByState } = require('./services/jobService');
-  const jobs = await getJobsByState(state, 5, 0);
-  
-  if (jobs.length === 0) {
-    await ctx.reply(`${state} mein abhi koi job nahi hai.`, getMainMenu());
-  } else {
-    const { formatJob, getJobButtons } = require('./controllers/jobController');
-    for (const job of jobs) {
-      await ctx.reply(formatJob(job), {
-        parse_mode: 'Markdown',
-        ...getJobButtons(job.id, 0, 1, `state_${state}`)
-      });
-    }
-  }
+  await handleStateJobsList(ctx, state, 0);
+});
+
+bot.action(/^state_([a-z_]+)_page_(\d+)$/, checkMembership, async (ctx) => {
+  const state = ctx.match[1].replace(/_/g, ' ');
+  const page = parseInt(ctx.match[2]);
+  await ctx.answerCbQuery();
+  await handleStateJobsList(ctx, state, page);
 });
 
 // Eligibility checker
@@ -111,8 +105,8 @@ bot.action('refer_earn', checkMembership, async (ctx) => {
 });
 
 // Remind me
-bot.action(/remind_(\d+)/, checkMembership, async (ctx) => {
-  const jobId = parseInt(ctx.match[1]);
+bot.action(/remind_(.+)/, checkMembership, async (ctx) => {
+  const jobId = ctx.match[1];
   await handleRemindMe(ctx, jobId);
 });
 

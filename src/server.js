@@ -32,18 +32,26 @@ app.get('/trigger-reminders', async (req, res) => {
     let sentCount = 0;
     for (const reminder of reminders) {
       try {
+        const job = reminder.job_id;
+        const user = reminder.user_id;
+
+        if (!job || !user) {
+          console.error(`Missing job or user for reminder ${reminder._id}`);
+          continue;
+        }
+
         const message = `🔔 **Reminder!**\n\n` +
-          `📌 ${reminder.title}\n` +
-          `🏛️ ${reminder.organization}\n` +
-          `📅 Last Date: ${new Date(reminder.last_date).toLocaleDateString('en-IN')}\n` +
-          `🔗 ${reminder.official_link}\n\n` +
+          `📌 ${job.title}\n` +
+          `🏛️ ${job.organization}\n` +
+          `📅 Last Date: ${new Date(job.last_date).toLocaleDateString('en-IN')}\n` +
+          `🔗 ${job.official_link}\n\n` +
           `⚠️ Jaldi apply karein!`;
 
-        await bot.telegram.sendMessage(reminder.telegram_id, message, { parse_mode: 'Markdown' });
+        await bot.telegram.sendMessage(user.telegram_id, message, { parse_mode: 'Markdown' });
         await markReminderSent(reminder._id);
         sentCount++;
       } catch (error) {
-        console.error(`Error sending reminder ${reminder.id}:`, error);
+        console.error(`Error sending reminder ${reminder._id}:`, error);
       }
     }
 
