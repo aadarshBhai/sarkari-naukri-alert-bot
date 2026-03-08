@@ -61,10 +61,20 @@ async function getTotalUsers() {
   }
 }
 
+async function getAllUsers() {
+  try {
+    return await User.find({}, 'telegram_id');
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    return [];
+  }
+}
+
 module.exports = {
   createUser,
   getUser,
   getUserReferrals,
   getTotalUsers,
+  getAllUsers,
   generateReferralCode
 };

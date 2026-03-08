@@ -3,6 +3,10 @@ const express = require('express');
 const bot = require('./bot');
 const { connectDB } = require('./database/db');
 const { getPendingReminders, markReminderSent } = require('./services/reminderService');
+const { scrapeSarkariResult } = require('./services/scraperService');
+const { getAllUsers } = require('./services/userService');
+const { formatJob } = require('./controllers/jobController');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -69,14 +73,49 @@ async function start() {
     await connectDB();
     console.log('✅ Database initialized');
 
+    // Run scraper on start
+    const newItems = await scrapeSarkariResult();
+    if (newItems.length > 0) {
+      console.log(`📣 Found ${newItems.length} new items on startup!`);
+    }
+
     // Set webhook (Production) or Polling (Local)
     if (process.env.NODE_ENV === 'production' && WEBHOOK_URL) {
       await bot.telegram.setWebhook(`${WEBHOOK_URL}/webhook`);
       console.log(`✅ Webhook set to: ${WEBHOOK_URL}/webhook`);
+      
+      // Render Keep-Alive Pinger
+      setInterval(() => {
+        axios.get(WEBHOOK_URL).catch(() => {});
+        console.log('📡 Sent keep-alive ping');
+      }, 10 * 60 * 1000); // Every 10 minutes
     } else {
       console.log('🤖 Starting in Polling mode (Local)...');
       bot.launch(); // Start polling
     }
+
+    // Real-time Scraper Interval
+    setInterval(async () => {
+      console.log('🔄 Running periodic scrape...');
+      const newItems = await scrapeSarkariResult();
+      if (newItems.length > 0) {
+        console.log(`📣 Found ${newItems.length} new items. Notifying users...`);
+        const users = await getAllUsers();
+        for (const item of newItems) {
+          const message = `🌟 **Nayi Update Ayi Hai!**\n\n${formatJob(item)}`;
+          for (const user of users) {
+            try {
+              await bot.telegram.sendMessage(user.telegram_id, message, { parse_mode: 'Markdown' });
+            } catch (err) {
+              // Ignore blocked bots or deactivated users
+              if (!err.message.includes('forbidden') && !err.message.includes('blocked')) {
+                console.error(`Failed to notify user ${user.telegram_id}:`, err.message);
+              }
+            }
+          }
+        }
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
 
     // Start Express server
     app.listen(PORT, () => {
