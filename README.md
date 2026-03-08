@@ -142,7 +142,6 @@ sarkari-naukri-alert-bot/
 │   └── server.js         # Express server
 ├── .env.example
 ├── .gitignore
-├── Dockerfile
 ├── package.json
 └── README.md
 ```

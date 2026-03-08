@@ -9,7 +9,6 @@ The complete bot codebase is ready with:
 - ✅ Admin panel
 - ✅ Referral system
 - ✅ Reminder system
-- ✅ Dockerfile
 - ✅ README.md
 
 ---
