@@ -21,37 +21,26 @@ async function scrapeSarkariResult() {
       result: []
     };
 
-    // Scrape Results (Box1, Col1)
-    $('div#box1 table td:nth-child(1) div#post ul li a').each((i, el) => {
-      let link = $(el).attr('href');
-      if (link && !link.startsWith('http')) link = 'https://www.sarkariresult.com' + (link.startsWith('/') ? '' : '/') + link;
-      updates.result.push({
-        title: $(el).text().trim(),
-        link: link,
-        type: 'result'
-      });
-    });
+    // Use a more robust approach: find the "post" divs by their preceding text labels
+    $('#post').each((i, el) => {
+      const heading = $(el).prev('div').text().toLowerCase();
+      const type = heading.includes('result') ? 'result' : 
+                   heading.includes('admit card') ? 'admit_card' : 
+                   heading.includes('latest jobs') ? 'job' : null;
 
-    // Scrape Admit Cards (Box2, Col1)
-    $('div#box2 table td:nth-child(1) div#post ul li a').each((i, el) => {
-      let link = $(el).attr('href');
-      if (link && !link.startsWith('http')) link = 'https://www.sarkariresult.com' + (link.startsWith('/') ? '' : '/') + link;
-      updates.admit_card.push({
-        title: $(el).text().trim(),
-        link: link,
-        type: 'admit_card'
-      });
-    });
-
-    // Scrape Latest Jobs (Box1, Col3)
-    $('div#box1 table td:nth-child(3) div#post ul li a').each((i, el) => {
-      let link = $(el).attr('href');
-      if (link && !link.startsWith('http')) link = 'https://www.sarkariresult.com' + (link.startsWith('/') ? '' : '/') + link;
-      updates.job.push({
-        title: $(el).text().trim(),
-        link: link,
-        type: 'job'
-      });
+      if (type) {
+        $(el).find('ul li a').each((j, linkEl) => {
+          let link = $(linkEl).attr('href');
+          if (link && !link.startsWith('http')) {
+            link = 'https://www.sarkariresult.com' + (link.startsWith('/') ? '' : '/') + link;
+          }
+          updates[type].push({
+            title: $(linkEl).text().trim(),
+            link: link,
+            type: type
+          });
+        });
+      }
     });
 
     let newItemsCount = 0;
