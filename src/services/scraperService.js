@@ -142,6 +142,18 @@ async function scrapeSarkariResult() {
             else if (item.title.toLowerCase().includes('graduate') || item.title.toLowerCase().includes('degree')) qual = 'Graduate';
           }
 
+          // Guess Category from title
+          let category = 'Other';
+          const titleLower = item.title.toLowerCase();
+          if (titleLower.includes('ssc')) category = 'SSC';
+          else if (titleLower.includes('upsc') || titleLower.includes('ias') || titleLower.includes('ips')) category = 'UPSC';
+          else if (titleLower.includes('railway') || titleLower.includes('rrb') || titleLower.includes('rrc')) category = 'Railway';
+          else if (titleLower.includes('bank') || titleLower.includes('ibps') || titleLower.includes('sbi') || titleLower.includes('rbi')) category = 'Banking';
+          else if (titleLower.includes('police') || titleLower.includes('constable') || titleLower.includes('si ')) category = 'Police';
+          else if (titleLower.includes('psc') || titleLower.includes('civil service')) category = 'State PSC';
+          else if (titleLower.includes('teacher') || titleLower.includes('tet') || titleLower.includes('tgt') || titleLower.includes('pgt')) category = 'Teaching';
+          else if (titleLower.includes('army') || titleLower.includes('navy') || titleLower.includes('airforce') || titleLower.includes('defence') || titleLower.includes('nda') || titleLower.includes('cds')) category = 'Defence';
+
           const jobData = {
             title: item.title,
             organization: org,
@@ -151,7 +163,7 @@ async function scrapeSarkariResult() {
             last_date: details.last_date,
             vacancies: details.vacancies,
             qualification: qual,
-            category: 'Other',
+            category: category,
             state: 'All India'
           };
 
