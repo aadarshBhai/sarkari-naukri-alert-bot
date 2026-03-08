@@ -80,7 +80,11 @@ async function searchJobsByEligibility(age, qualification, state) {
     const filter = {};
     
     if (qualification) {
-      filter.qualification = { $regex: qualification, $options: 'i' };
+      // Broaden search to title or qualification field
+      filter.$or = [
+        { qualification: { $regex: qualification, $options: 'i' } },
+        { title: { $regex: qualification.split(' ')[0], $options: 'i' } } 
+      ];
     }
     
     if (state) {
