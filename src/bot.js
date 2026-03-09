@@ -9,7 +9,7 @@ const { handleStart, handleVerifyJoin, getMainMenu } = require('./controllers/st
 const { handleLatestJobs, handleSearchByExam, handleCategoryJobs, handleStateJobs, handleStateJobsList, handleEligibilityChecker, handleAdmitCards, handleResults, handleEligibilityResults } = require('./controllers/jobController');
 const { handleReferEarn } = require('./controllers/referralController');
 const { handleRemindMe } = require('./controllers/reminderController');
-const { handlePreviousPapers } = require('./controllers/paperController');
+const { handlePreviousPapers, handlePapersByExam } = require('./controllers/paperController');
 const { handleAddJob, handleAddPaper, handleAdminMessage, handleStats, adminSessions } = require('./controllers/adminController');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -127,6 +127,12 @@ bot.action('refer_earn', checkMembership, async (ctx) => {
 bot.action('previous_papers', checkMembership, async (ctx) => {
   await ctx.answerCbQuery();
   await handlePreviousPapers(ctx);
+});
+
+bot.action(/^papers_([a-z0-9_]+)$/, checkMembership, async (ctx) => {
+  const exam = ctx.match[1].toUpperCase();
+  await ctx.answerCbQuery();
+  await handlePapersByExam(ctx, exam);
 });
 
 // Remind me

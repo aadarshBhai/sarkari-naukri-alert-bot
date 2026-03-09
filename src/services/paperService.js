@@ -9,6 +9,15 @@ async function getAllPapers() {
   }
 }
 
+async function getPapersByExam(exam) {
+  try {
+    return await Paper.find({ exam: new RegExp(`^${exam}$`, 'i') }).sort({ year: -1, created_at: -1 });
+  } catch (error) {
+    console.error('Error in getPapersByExam:', error);
+    throw error;
+  }
+}
+
 async function createPaper(paperData) {
   try {
     const paper = new Paper(paperData);
@@ -21,6 +30,6 @@ async function createPaper(paperData) {
 }
 
 module.exports = {
-  getAllPapers,
-  createPaper
+  createPaper,
+  getPapersByExam
 };
