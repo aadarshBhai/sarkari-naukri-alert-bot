@@ -209,13 +209,23 @@ async function scrapeSarkariResult() {
 
 const paperSources = {
   SSC: [
-    "https://example-source-ssc.com/papers"
+    "https://www.sarkariresult.com/ssc-previous-papers.php",
+    "https://www.sarkariresult.com/ssc.php"
   ],
   Railway: [
-    "https://example-source-railway.com/papers"
+    "https://www.sarkariresult.com/railway.php",
+    "https://www.sarkariresult.com/railway-ntpc.php"
   ],
   Banking: [
-    "https://example-source-banking.com/papers"
+    "https://www.sarkariresult.com/bank.php",
+    "https://www.sarkariresult.com/ibps.php"
+  ],
+  Police: [
+    "https://www.sarkariresult.com/up-police.php",
+    "https://www.sarkariresult.com/police-jobs.php"
+  ],
+  UPSC: [
+    "https://www.sarkariresult.com/upsc.php"
   ]
 };
 

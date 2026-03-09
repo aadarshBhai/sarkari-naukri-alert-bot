@@ -4,6 +4,7 @@ const bot = require('./bot');
 const { connectDB } = require('./database/db');
 const { getPendingReminders, markReminderSent } = require('./services/reminderService');
 const { scrapeSarkariResult } = require('./services/scraperService');
+const { syncJobsFromSheets } = require('./services/jobSyncService');
 const { getAllUsers } = require('./services/userService');
 const { formatJob } = require('./controllers/jobController');
 const axios = require('axios');
@@ -73,8 +74,10 @@ async function start() {
     await connectDB();
     console.log('✅ Database initialized');
 
-    // Run scraper on start
+    // Run scraper and sheet sync on start
     const newItems = await scrapeSarkariResult();
+    await syncJobsFromSheets(bot);
+    
     if (newItems.length > 0) {
       console.log(`📣 Found ${newItems.length} new items on startup!`);
     }
@@ -97,9 +100,10 @@ async function start() {
 
     // Real-time Scraper Interval
     setInterval(async () => {
-      console.log('🔄 Running periodic scrape...');
+      console.log('🔄 Running periodic scrape and sync...');
       const newItems = await scrapeSarkariResult();
-      const newPapersCount = await scrapeNewPapers();
+      await syncJobsFromSheets(bot);
+      
       if (newItems.length > 0) {
         console.log(`📣 Found ${newItems.length} new items. Notifying users...`);
         const users = await getAllUsers();

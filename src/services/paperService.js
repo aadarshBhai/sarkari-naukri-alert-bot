@@ -1,4 +1,5 @@
 const { Paper } = require('../database/models');
+const { getSheetData } = require('./googleSheetsService');
 
 /**
  * Normalize a PDF link to ensure exact matching.
@@ -16,9 +17,32 @@ function normalizeLink(link) {
   }
 }
 
+/**
+ * Fetch papers from Google Sheets and return them as Paper objects.
+ * Sheet format: exam | title | year | pdf_link
+ * @returns {Promise<Array>} - List of normalized paper objects.
+ */
+async function fetchPapersFromSheets() {
+  const rows = await getSheetData('Sheet1!A2:D'); // Assuming sheet name is 'Sheet1'
+  if (!rows || rows.length === 0) return [];
+
+  return rows.map(row => ({
+    exam: row[0],
+    title: row[1],
+    year: row[2],
+    pdf_link: row[3],
+    source: 'Google Sheet'
+  }));
+}
+
 async function getAllPapers() {
   try {
-    return await Paper.find().sort({ year: -1, created_at: -1 });
+    const dbPapers = await Paper.find().sort({ year: -1, created_at: -1 });
+    const sheetPapers = await fetchPapersFromSheets();
+    
+    // Combine both sources, but prefer Google Sheets if there's overlap? 
+    // For now, just merge them.
+    return [...sheetPapers, ...dbPapers];
   } catch (error) {
     console.error('Error in getAllPapers:', error);
     throw error;
@@ -27,7 +51,10 @@ async function getAllPapers() {
 
 async function getPapersByExam(exam) {
   try {
-    return await Paper.find({ exam: new RegExp(`^${exam}$`, 'i') }).sort({ year: -1, created_at: -1 });
+    const dbPapers = await Paper.find({ exam: new RegExp(`^${exam}$`, 'i') }).sort({ year: -1, created_at: -1 });
+    const sheetPapers = (await fetchPapersFromSheets()).filter(p => p.exam.toLowerCase() === exam.toLowerCase());
+    
+    return [...sheetPapers, ...dbPapers];
   } catch (error) {
     console.error('Error in getPapersByExam:', error);
     throw error;
@@ -36,10 +63,16 @@ async function getPapersByExam(exam) {
 
 async function getPapersByExamAndYear(exam, year) {
   try {
-    return await Paper.find({ 
+    const dbPapers = await Paper.find({ 
       exam: new RegExp(`^${exam}$`, 'i'),
       year: year 
     }).sort({ created_at: -1 });
+    
+    const sheetPapers = (await fetchPapersFromSheets()).filter(p => 
+      p.exam.toLowerCase() === exam.toLowerCase() && p.year === year
+    );
+    
+    return [...sheetPapers, ...dbPapers];
   } catch (error) {
     console.error('Error in getPapersByExamAndYear:', error);
     throw error;

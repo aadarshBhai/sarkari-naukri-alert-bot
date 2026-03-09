@@ -26,17 +26,24 @@ async function handlePreviousPapers(ctx) {
 async function handlePapersByExam(ctx, exam) {
   try {
     // Instead of showing all papers, show year options
-    await ctx.editMessageText(
-      `📅 Select the year for **${exam.toUpperCase()}** papers:`,
-      {
-        parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([
-          [Markup.button.callback("2024", `papers_${exam.toLowerCase()}_2024`)],
-          [Markup.button.callback("2025", `papers_${exam.toLowerCase()}_2025`)],
-          [Markup.button.callback("⬅️ Back to Exams", "previous_papers")]
-        ])
-      }
-    );
+    const text = `📅 Select the year for **${exam.toUpperCase()}** papers:`;
+    const keyboard = Markup.inlineKeyboard([
+      [
+        Markup.button.callback("2024", `papers_${exam.toLowerCase()}_2024`),
+        Markup.button.callback("2025", `papers_${exam.toLowerCase()}_2025`)
+      ],
+      [
+        Markup.button.callback("2026", `papers_${exam.toLowerCase()}_2026`),
+        Markup.button.callback("All Years", `papers_${exam.toLowerCase()}_all`)
+      ],
+      [Markup.button.callback("⬅️ Back to Exams", "previous_papers")]
+    ]);
+
+    if (ctx.callbackQuery) {
+      await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboard });
+    } else {
+      await ctx.reply(text, { parse_mode: 'Markdown', ...keyboard });
+    }
   } catch (error) {
     console.error(`Error in handlePapersByExam for ${exam}:`, error);
     await ctx.reply('⚠️ Error fetching years.');
@@ -45,15 +52,22 @@ async function handlePapersByExam(ctx, exam) {
 
 async function handlePapersByYear(ctx, exam, year) {
   try {
-    const papers = await getPapersByExamAndYear(exam, year);
+    const papers = (year === 'all') 
+      ? await getPapersByExam(exam) 
+      : await getPapersByExamAndYear(exam, year);
 
     if (!papers || papers.length === 0) {
-      return ctx.reply(`❌ No ${exam.toUpperCase()} papers available for ${year} yet.`, 
+      const msg = (year === 'all') 
+        ? `❌ No ${exam.toUpperCase()} papers available yet.` 
+        : `❌ No ${exam.toUpperCase()} papers available for ${year} yet.`;
+      
+      return ctx.reply(msg, 
         Markup.inlineKeyboard([[Markup.button.callback('⬅️ Back', `papers_${exam.toLowerCase()}`)]])
       );
     }
 
-    await ctx.reply(`📄 **${exam.toUpperCase()} ${year} Previous Year Papers**`, { parse_mode: 'Markdown' });
+    const yearLabel = (year === 'all') ? '' : ` ${year}`;
+    await ctx.reply(`📄 **${exam.toUpperCase()}${yearLabel} Previous Year Papers**`, { parse_mode: 'Markdown' });
 
     const sentLinks = new Set();
 
