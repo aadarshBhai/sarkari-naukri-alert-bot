@@ -95,6 +95,7 @@ async function start() {
       }, 10 * 60 * 1000); // Every 10 minutes
     } else {
       console.log('🤖 Starting in Polling mode (Local)...');
+      await bot.telegram.deleteWebhook();
       bot.launch(); // Start polling
     }
 
