@@ -10,8 +10,7 @@ async function handlePreviousPapers(ctx) {
         [Markup.button.callback("UPSC", "papers_upsc")],
         [Markup.button.callback("Railway", "papers_railway")],
         [Markup.button.callback("Banking", "papers_banking")],
-        [Markup.button.callback("Police", "papers_police")],
-        [Markup.button.callback('🏠 Main Menu', 'main_menu')]
+        [Markup.button.callback("Police", "papers_police")]
       ])
     );
   } catch (error) {
@@ -33,20 +32,27 @@ async function handlePapersByExam(ctx, exam) {
     await ctx.reply(`📄 **${exam.toUpperCase()} Previous Year Papers**`, { parse_mode: 'Markdown' });
 
     for (const paper of papers) {
-      const message = `📄 *${paper.title}*\n` +
-        `Exam: ${paper.exam}\n` +
-        `Year: ${paper.year || 'N/A'}\n\n` +
-        `🔗 [Download PDF](${paper.pdf_link})`;
+      // Check if it's a direct PDF
+      const isDirectPdf = paper.pdf_link && paper.pdf_link.toLowerCase().endsWith('.pdf');
 
-      if (paper.pdf_link && paper.pdf_link.toLowerCase().endsWith('.pdf')) {
+      if (isDirectPdf) {
         try {
-          await ctx.replyWithDocument(paper.pdf_link, { caption: `📄 ${paper.title} (${paper.year || 'N/A'})` });
+          await ctx.replyWithDocument(paper.pdf_link, { 
+            caption: `📄 ${paper.title}\nYear: ${paper.year || 'N/A'}` 
+          });
+          continue; // Move to next paper
         } catch (docError) {
-          await ctx.reply(message, { parse_mode: 'Markdown' });
+          console.error('Error sending document:', docError);
+          // Fallback to text if document send fails
         }
-      } else {
-        await ctx.reply(message, { parse_mode: 'Markdown' });
       }
+
+      // Format requested in the prompt
+      const message = `📄 ${paper.title}\n` +
+        `Year: ${paper.year || 'N/A'}\n\n` +
+        `Download PDF:\n${paper.pdf_link}`;
+
+      await ctx.reply(message);
     }
   } catch (error) {
     console.error(`Error in handlePapersByExam for ${exam}:`, error);
