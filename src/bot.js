@@ -9,7 +9,8 @@ const { handleStart, handleVerifyJoin, getMainMenu } = require('./controllers/st
 const { handleLatestJobs, handleSearchByExam, handleCategoryJobs, handleStateJobs, handleStateJobsList, handleEligibilityChecker, handleAdmitCards, handleResults, handleEligibilityResults } = require('./controllers/jobController');
 const { handleReferEarn } = require('./controllers/referralController');
 const { handleRemindMe } = require('./controllers/reminderController');
-const { handleAddJob, handleAdminMessage, handleStats, adminSessions } = require('./controllers/adminController');
+const { handlePreviousPapers } = require('./controllers/paperController');
+const { handleAddJob, handleAddPaper, handleAdminMessage, handleStats, adminSessions } = require('./controllers/adminController');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -122,6 +123,12 @@ bot.action('refer_earn', checkMembership, async (ctx) => {
   await handleReferEarn(ctx);
 });
 
+// Previous year papers
+bot.action('previous_papers', checkMembership, async (ctx) => {
+  await ctx.answerCbQuery();
+  await handlePreviousPapers(ctx);
+});
+
 // Remind me
 bot.action(/remind_(.+)/, checkMembership, async (ctx) => {
   const jobId = ctx.match[1];
@@ -130,6 +137,7 @@ bot.action(/remind_(.+)/, checkMembership, async (ctx) => {
 
 // Admin commands
 bot.command('addjob', isAdmin, handleAddJob);
+bot.command('addpaper', isAdmin, handleAddPaper);
 bot.command('stats', isAdmin, handleStats);
 
 // Handle admin messages for job creation

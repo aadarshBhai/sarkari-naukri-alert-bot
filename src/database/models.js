@@ -69,8 +69,30 @@ const reminderSchema = new mongoose.Schema({
   },
 });
 
+// Paper Schema
+const paperSchema = new mongoose.Schema({
+  exam: {
+    type: String,
+    required: true,
+  },
+  title: {
+    type: String,
+    required: true,
+  },
+  year: String,
+  pdf_link: {
+    type: String,
+    required: true,
+  },
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const User = mongoose.model('User', userSchema);
 const Job = mongoose.model('Job', jobSchema);
 const Reminder = mongoose.model('Reminder', reminderSchema);
+const Paper = mongoose.model('Paper', paperSchema);
 
-module.exports = { User, Job, Reminder };
+module.exports = { User, Job, Reminder, Paper };

@@ -1,7 +1,8 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { Job } = require('../database/models');
+const { Job, Paper } = require('../database/models');
 const { createJob } = require('./jobService');
+const { createPaper } = require('./paperService');
 
 const SARKARI_RESULT_URL = 'https://www.sarkariresult.com/';
 
@@ -206,4 +207,106 @@ async function scrapeSarkariResult() {
   }
 }
 
-module.exports = { scrapeSarkariResult };
+async function fetchPaperPdfLink(url) {
+  try {
+    const { data } = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      },
+      timeout: 10000
+    });
+    const $ = cheerio.load(data);
+    let pdfLink = null;
+    
+    // Look for link containing 'download' and 'paper' or 'answer key'
+    $('a').each((i, el) => {
+      const text = $(el).text().toLowerCase();
+      const link = $(el).attr('href');
+      if (link && text.includes('download') && (text.includes('paper') || text.includes('answer key'))) {
+        pdfLink = link;
+      }
+    });
+    
+    return pdfLink;
+  } catch (error) {
+    console.error(`❌ Error fetching paper PDF for ${url}:`, error.message);
+    return null;
+  }
+}
+
+async function scrapeNewPapers() {
+  try {
+    console.log('🔄 Starting Previous Papers scrape...');
+    const { data } = await axios.get(SARKARI_RESULT_URL, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+    const $ = cheerio.load(data);
+    
+    const paperLinks = [];
+
+    $('#post').each((i, el) => {
+      const heading = $(el).prev('div').text().toLowerCase();
+      // Target Answer Key & Syllabus sections which often contain previous papers or keys
+      if (heading.includes('answer key') || heading.includes('syllabus')) {
+        $(el).find('ul li a').each((j, linkEl) => {
+          let link = $(linkEl).attr('href');
+          let title = $(linkEl).text().trim();
+          
+          if (title.toLowerCase().includes('paper') || title.toLowerCase().includes('answer key')) {
+            if (link && !link.startsWith('http')) {
+              link = 'https://www.sarkariresult.com' + (link.startsWith('/') ? '' : '/') + link;
+            }
+            if (link) {
+              paperLinks.push({ title, link });
+            }
+          }
+        });
+      }
+    });
+
+    let newPapersCount = 0;
+
+    for (const item of paperLinks.slice(0, 5)) {
+      const exists = await Paper.findOne({ title: item.title });
+      
+      if (!exists) {
+        console.log(`✨ New Paper/Answer Key found: ${item.title}`);
+        const pdfLink = await fetchPaperPdfLink(item.link);
+        
+        let exam = 'Other';
+        const t = item.title.toLowerCase();
+        if (t.includes('ssc')) exam = 'SSC';
+        else if (t.includes('railway') || t.includes('rrb') || t.includes('rrc')) exam = 'Railway';
+        else if (t.includes('upsc')) exam = 'UPSC';
+        else if (t.includes('bank') || t.includes('ibps') || t.includes('sbi')) exam = 'Banking';
+        else if (t.includes('police')) exam = 'Police';
+        else if (t.includes('psc')) exam = 'State PSC';
+        else if (t.includes('tet') || t.includes('teacher')) exam = 'Teaching';
+
+        const finalPdfLink = pdfLink || item.link; // default to page link if direct pdf not found
+        
+        const paperData = {
+          exam: exam,
+          title: item.title,
+          year: new Date().getFullYear().toString(),
+          pdf_link: finalPdfLink
+        };
+
+        await createPaper(paperData);
+        newPapersCount++;
+      }
+    }
+
+    if (newPapersCount > 0) {
+      console.log(`✅ Paper scrape complete. Found ${newPapersCount} new papers.`);
+    }
+    return newPapersCount;
+  } catch (error) {
+    console.error('❌ Error during papers scraping:', error.message);
+    return 0;
+  }
+}
+
+module.exports = { scrapeSarkariResult, scrapeNewPapers };

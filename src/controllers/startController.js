@@ -9,6 +9,7 @@ function getMainMenu() {
     [Markup.button.callback('📌 State Wise Jobs', 'state_jobs')],
     [Markup.button.callback('📌 Admit Card Updates', 'admit_cards')],
     [Markup.button.callback('📌 Results Updates', 'results')],
+    [Markup.button.callback('📄 Previous Year Question Papers', 'previous_papers')],
     [Markup.button.callback('📌 Refer & Earn', 'refer_earn')]
   ]);
 }

@@ -1,12 +1,19 @@
 const { createJob, getTotalJobs } = require('../services/jobService');
+const { createPaper } = require('../services/paperService');
 const { getTotalUsers } = require('../services/userService');
 
 const adminSessions = new Map();
 
 async function handleAddJob(ctx) {
   const userId = ctx.from.id;
-  adminSessions.set(userId, { step: 'type', data: {} });
+  adminSessions.set(userId, { type: 'job', step: 'type', data: {} });
   await ctx.reply('📝 Job ka type chunein (job / admit_card / result):');
+}
+
+async function handleAddPaper(ctx) {
+  const userId = ctx.from.id;
+  adminSessions.set(userId, { type: 'paper', step: 'exam', data: {} });
+  await ctx.reply('📑 Exam ka naam enter karein (SSC / UPSC / Railway etc):');
 }
 
 async function handleAdminMessage(ctx) {
@@ -17,6 +24,18 @@ async function handleAdminMessage(ctx) {
 
   const text = ctx.message.text.toLowerCase().trim();
   
+  switch (session.type) {
+    case 'job':
+      await handleJobSession(ctx, session, text);
+      break;
+    case 'paper':
+      await handlePaperSession(ctx, session, text);
+      break;
+  }
+}
+
+async function handleJobSession(ctx, session, text) {
+  const userId = ctx.from.id;
   switch (session.step) {
     case 'type':
       if (!['job', 'admit_card', 'result'].includes(text)) {
@@ -97,8 +116,50 @@ async function handleAdminMessage(ctx) {
       }
       break;
   }
-  
-  adminSessions.set(userId, session);
+  if (adminSessions.has(userId)) {
+    adminSessions.set(userId, session);
+  }
+}
+
+async function handlePaperSession(ctx, session, text) {
+  const userId = ctx.from.id;
+  const rawText = ctx.message.text.trim(); // Use original casing for some fields if needed, but the prompt says lowercase in handleAdminMessage context. Let's see.
+
+  switch (session.step) {
+    case 'exam':
+      session.data.exam = rawText;
+      session.step = 'title';
+      await ctx.reply('📝 Paper ka title enter karein:');
+      break;
+
+    case 'title':
+      session.data.title = rawText;
+      session.step = 'year';
+      await ctx.reply('📅 Exam ka saal (Year) enter karein:');
+      break;
+
+    case 'year':
+      session.data.year = rawText;
+      session.step = 'pdf_link';
+      await ctx.reply('🔗 PDF download link enter karein:');
+      break;
+
+    case 'pdf_link':
+      session.data.pdf_link = rawText;
+      try {
+        await createPaper(session.data);
+        await ctx.reply('✅ Previous Paper successfully add ho gaya!');
+        adminSessions.delete(userId);
+      } catch (error) {
+        console.error('Error creating paper:', error);
+        await ctx.reply('⚠️ Error! Paper add nahi ho paya.');
+        adminSessions.delete(userId);
+      }
+      break;
+  }
+  if (adminSessions.has(userId)) {
+    adminSessions.set(userId, session);
+  }
 }
 
 async function handleStats(ctx) {
@@ -119,6 +180,7 @@ async function handleStats(ctx) {
 
 module.exports = {
   handleAddJob,
+  handleAddPaper,
   handleAdminMessage,
   handleStats,
   adminSessions

@@ -12,7 +12,14 @@ async function handleReferEarn(ctx) {
     }
 
     const referralCount = await getUserReferrals(telegramId);
-    const botUsername = ctx.botInfo.username;
+    let botUsername;
+    if (ctx.botInfo && ctx.botInfo.username) {
+      botUsername = ctx.botInfo.username;
+    } else {
+      const me = await ctx.telegram.getMe();
+      botUsername = me.username;
+    }
+    
     const referralLink = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
 
     const message = `🎁 **Refer & Earn**\n\n` +
