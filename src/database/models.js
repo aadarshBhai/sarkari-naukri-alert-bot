@@ -83,6 +83,10 @@ const paperSchema = new mongoose.Schema({
   pdf_link: {
     type: String,
     required: true,
+    unique: true, // Prevent duplicate links
+  },
+  source: {
+    type: String, // To store the origin URL
   },
   created_at: {
     type: Date,

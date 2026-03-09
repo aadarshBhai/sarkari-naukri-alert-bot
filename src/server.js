@@ -3,7 +3,7 @@ const express = require('express');
 const bot = require('./bot');
 const { connectDB } = require('./database/db');
 const { getPendingReminders, markReminderSent } = require('./services/reminderService');
-const { scrapeSarkariResult, scrapeNewPapers } = require('./services/scraperService');
+const { scrapeSarkariResult } = require('./services/scraperService');
 const { getAllUsers } = require('./services/userService');
 const { formatJob } = require('./controllers/jobController');
 const axios = require('axios');
@@ -75,12 +75,8 @@ async function start() {
 
     // Run scraper on start
     const newItems = await scrapeSarkariResult();
-    const newPapersCount = await scrapeNewPapers();
     if (newItems.length > 0) {
       console.log(`📣 Found ${newItems.length} new items on startup!`);
-    }
-    if (newPapersCount > 0) {
-      console.log(`📣 Found ${newPapersCount} new papers on startup!`);
     }
 
     // Set webhook (Production) or Polling (Local)

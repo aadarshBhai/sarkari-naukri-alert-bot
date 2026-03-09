@@ -1,8 +1,42 @@
-const { createJob, getTotalJobs } = require('../services/jobService');
+const { createJob, getTotalJobs, getLatestJobs } = require('../services/jobService');
 const { createPaper } = require('../services/paperService');
 const { getTotalUsers } = require('../services/userService');
+const { scanPapers } = require('../services/scraperService');
+const { formatJob } = require('./jobController');
+const { Markup } = require('telegraf');
 
 const adminSessions = new Map();
+
+async function postJobToChannel(ctx, job) {
+  const channelUsername = process.env.CHANNEL_USERNAME || '@SarkariNaukriAlertOfficial';
+  const botUsername = ctx.botInfo?.username || 'SarkariNaukriAlertBot';
+  
+  try {
+    const message = formatJob(job);
+    
+    // Add channel-specific footer if needed, but formatJob already has one. 
+    // Let's customize it slightly for the channel as per prompt requirements.
+    const channelMessage = `🚨 <b>New Government Job Alert</b>\n\n` +
+      `🏢 <b>Organization:</b> ${job.organization.toUpperCase()}\n` +
+      `📄 <b>Post:</b> ${job.title}\n` +
+      `👥 <b>Vacancies:</b> ${job.vacancies || 'Notification Dekhein'}\n` +
+      `🎓 <b>Qualification:</b> ${job.qualification || 'As per norms'}\n` +
+      `📅 <b>Last Date:</b> ${job.last_date ? new Date(job.last_date).toLocaleDateString('en-IN') : 'Jald hi'}\n\n` +
+      `🔗 <b>Apply Here:</b>\n${job.official_link}\n\n` +
+      `📢 <b>Join our bot for alerts:</b>\nt.me/${botUsername}`;
+
+    await ctx.telegram.sendMessage(channelUsername, channelMessage, {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard([
+        [Markup.button.url('🚀 Get Alerts in Bot', `https://t.me/${botUsername}`)]
+      ])
+    });
+    return true;
+  } catch (error) {
+    console.error('Error posting to channel:', error);
+    return false;
+  }
+}
 
 async function handleAddJob(ctx) {
   const userId = ctx.from.id;
@@ -106,8 +140,17 @@ async function handleJobSession(ctx, session, text) {
       session.data.start_date = new Date().toISOString().split('T')[0];
       
       try {
-        await createJob(session.data);
+        const newJob = await createJob(session.data);
         await ctx.reply('✅ Job successfully add ho gayi!');
+        
+        // Auto post to channel
+        const posted = await postJobToChannel(ctx, newJob);
+        if (posted) {
+          await ctx.reply('📢 Job automatically channel pe post ho gayi!');
+        } else {
+          await ctx.reply('⚠️ Job saved but failed to post to channel.');
+        }
+        
         adminSessions.delete(userId);
       } catch (error) {
         console.error('Error creating job:', error);
@@ -178,10 +221,57 @@ async function handleStats(ctx) {
   }
 }
 
+async function handleScanPapers(ctx) {
+  try {
+    await ctx.reply('🔍 Scanning for new papers...');
+    await scanPapers();
+    await ctx.reply('✅ Paper scanning completed!');
+  } catch (error) {
+    console.error('Error scanning papers:', error);
+    await ctx.reply('⚠️ Error scanning papers.');
+  }
+}
+
+async function handleBroadcastJobs(ctx) {
+  try {
+    const jobs = await getLatestJobs(5, 0);
+    if (jobs.length === 0) {
+      return ctx.reply('⚠️ No latest jobs found to broadcast.');
+    }
+
+    await ctx.reply(`📡 Broadcasting ${jobs.length} latest jobs to channel...`);
+    let successCount = 0;
+
+    for (const job of jobs) {
+      const success = await postJobToChannel(ctx, job);
+      if (success) successCount++;
+    }
+
+    await ctx.reply(`✅ Broadcast complete! ${successCount}/${jobs.length} jobs posted successfully.`);
+  } catch (error) {
+    console.error('Error broadcasting jobs:', error);
+    await ctx.reply('⚠️ Broadcast fail ho gaya. Console logs check karein.');
+  }
+}
+
+async function handleCleanPapers(ctx) {
+  try {
+    await ctx.reply('🧹 Cleaning duplicate papers from the database...');
+    const deletedCount = await cleanDuplicatePapers();
+    await ctx.reply(`✅ Cleanup complete! Removed ${deletedCount} duplicate papers.`);
+  } catch (error) {
+    console.error('Error cleaning papers:', error);
+    await ctx.reply('⚠️ An error occurred during cleanup.');
+  }
+}
+
 module.exports = {
   handleAddJob,
   handleAddPaper,
   handleAdminMessage,
   handleStats,
-  adminSessions
+  adminSessions,
+  handleScanPapers,
+  handleBroadcastJobs,
+  handleCleanPapers
 };

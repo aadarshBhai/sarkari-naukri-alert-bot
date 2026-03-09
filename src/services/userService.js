@@ -7,16 +7,42 @@ function generateReferralCode(telegramId) {
 async function createUser(telegramId, referredBy = null) {
   try {
     let user = await User.findOne({ telegram_id: telegramId });
+    
     if (user) {
+      // If user exists but doesn't have a referral code, generate one
+      if (!user.referral_code) {
+        user.referral_code = generateReferralCode(telegramId);
+        await user.save();
+      }
+      
+      // If user exists but wasn't referred before, and now comes via referral
+      // We only update if they haven't been referred by anyone yet
+      if (referredBy && !user.referred_by && referredBy !== user.referral_code) {
+        // Verify the referrer exists to avoid fake/broken referrals
+        const referrer = await User.findOne({ referral_code: referredBy });
+        if (referrer && referrer.telegram_id !== telegramId) {
+          user.referred_by = referredBy;
+          await user.save();
+        }
+      }
       return user;
     }
     
     const referralCode = generateReferralCode(telegramId);
     
+    // Validate referrer for new users
+    let validReferredBy = null;
+    if (referredBy) {
+      const referrer = await User.findOne({ referral_code: referredBy });
+      if (referrer && referrer.telegram_id !== telegramId) {
+        validReferredBy = referredBy;
+      }
+    }
+    
     user = new User({
       telegram_id: telegramId,
       referral_code: referralCode,
-      referred_by: referredBy ? referredBy.toString() : null
+      referred_by: validReferredBy
     });
     
     await user.save();

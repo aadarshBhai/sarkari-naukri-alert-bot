@@ -207,150 +207,73 @@ async function scrapeSarkariResult() {
   }
 }
 
-async function fetchPaperPdfLink(url) {
-  try {
-    const { data } = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      },
-      timeout: 10000
-    });
-    const $ = cheerio.load(data);
-    let pdfLink = null;
-    
-    // Improved PDF link detection
-    $('a').each((i, el) => {
-      const text = $(el).text().toLowerCase();
-      const link = $(el).attr('href');
-      if (!link) return;
+const paperSources = {
+  SSC: [
+    "https://example-source-ssc.com/papers"
+  ],
+  Railway: [
+    "https://example-source-railway.com/papers"
+  ],
+  Banking: [
+    "https://example-source-banking.com/papers"
+  ]
+};
 
-      const isDownloadLink = text.includes('download') || text.includes('click here') || text.includes('link');
-      const isPaperRelated = text.includes('paper') || text.includes('answer key') || text.includes('question') || text.includes('solution');
-      
-      if (isDownloadLink && isPaperRelated) {
-        // If it's a direct PDF, take it
-        if (link.toLowerCase().endsWith('.pdf')) {
-          pdfLink = link;
-          return false; // break each
-        }
-        // If it's a Google Drive link or similar common hosting
-        if (link.includes('drive.google.com') || link.includes('mediafire.com') || link.includes('dropbox.com')) {
-          pdfLink = link;
-          return false;
-        }
-        // Save first match as fallback
-        if (!pdfLink) pdfLink = link;
-      }
-    });
-    
-    // Final check for direct .pdf links in the page if not found yet
-    if (!pdfLink) {
-      $('a').each((i, el) => {
-        const link = $(el).attr('href');
-        if (link && link.toLowerCase().endsWith('.pdf')) {
-          pdfLink = link;
-          return false;
-        }
-      });
-    }
+async function scanPapers() {
+  console.log("Paper scan started");
+  let summary = {};
 
-    return pdfLink;
-  } catch (error) {
-    console.error(`❌ Error fetching paper PDF for ${url}:`, error.message);
-    return null;
-  }
-}
+  for (const exam in paperSources) {
+    summary[exam] = 0;
+    for (const sourceUrl of paperSources[exam]) {
+      try {
+        const { data } = await axios.get(sourceUrl, { timeout: 10000 });
+        const $ = cheerio.load(data);
+        let newPapersCount = 0;
 
-async function scrapeNewPapers() {
-  try {
-    console.log('🔄 Starting Previous Papers scrape...');
-    
-    // Sites to scrape for papers
-    const sources = [
-      { url: 'https://www.sarkariresult.com/answerkey.php', section: 'Answer Key' },
-      { url: 'https://www.sarkariresult.com/syllabus.php', section: 'Syllabus' }
-    ];
+        const paperPromises = [];
 
-    let totalNewPapers = 0;
+        $("a").each((i, el) => {
+          const link = $(el).attr("href");
+          if (link && link.endsWith(".pdf")) {
+            const title = $(el).text().trim() || `Paper from ${sourceUrl}`;
+            const yearMatch = title.match(/20\d{2}/);
+            const year = yearMatch ? yearMatch[0] : new Date().getFullYear().toString();
 
-    for (const source of sources) {
-      const { data } = await axios.get(source.url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      });
-      const $ = cheerio.load(data);
-      
-      const paperLinks = [];
+            const paperData = {
+              exam,
+              title,
+              year,
+              pdf_link: link,
+              source: sourceUrl,
+            };
 
-      // Sarkari Result lists are often inside #post or within a table
-      $('#post ul li a, table tr td a').each((j, linkEl) => {
-        let link = $(linkEl).attr('href');
-        let title = $(linkEl).text().trim();
-        
-        if (!link || !title) return;
-
-        // More inclusive title matching
-        const isRelevant = title.toLowerCase().includes('paper') || 
-                           title.toLowerCase().includes('answer key') || 
-                           title.toLowerCase().includes('question paper') ||
-                           title.toLowerCase().includes('syllabus');
-
-        if (isRelevant) {
-          if (!link.startsWith('http')) {
-            link = 'https://www.sarkariresult.com' + (link.startsWith('/') ? '' : '/') + link;
+            const promise = createPaper(paperData)
+              .then(created => {
+                if (created) {
+                  newPapersCount++;
+                }
+              })
+              .catch(error => {
+                if (error.code !== 11000) { // Ignore duplicate key errors
+                  console.error(`Error saving paper ${link}:`, error);
+                }
+              });
+            paperPromises.push(promise);
           }
-          paperLinks.push({ title, link });
-        }
-      });
-
-      for (const item of paperLinks.slice(0, 10)) { // Check top 10 from each source
-        const exists = await Paper.findOne({ 
-          $or: [{ title: item.title }, { pdf_link: item.link }] 
         });
-        
-        if (!exists) {
-          console.log(`✨ New Paper/Key found: ${item.title}`);
-          const pdfLink = await fetchPaperPdfLink(item.link);
-          
-          let exam = 'Other';
-          const t = item.title.toLowerCase();
-          
-          // Enhanced categorization
-          if (t.includes('ssc')) exam = 'SSC';
-          else if (t.includes('upsc') || t.includes('civil service') || t.includes('ias') || t.includes('ips')) exam = 'UPSC';
-          else if (t.includes('railway') || t.includes('rrb') || t.includes('rrc') || t.includes('ntpc') || t.includes('alp')) exam = 'Railway';
-          else if (t.includes('bank') || t.includes('ibps') || t.includes('sbi') || t.includes('rbi') || t.includes('po ') || t.includes('clerk')) exam = 'Banking';
-          else if (t.includes('police') || t.includes('constable') || t.includes('si ') || t.includes('daroga')) exam = 'Police';
-          else if (t.includes('psc')) exam = 'State PSC';
-          else if (t.includes('teacher') || t.includes('tet') || t.includes('tgt') || t.includes('pgt') || t.includes('bed')) exam = 'Teaching';
-          else if (t.includes('army') || t.includes('navy') || t.includes('airforce') || t.includes('defence') || t.includes('nda') || t.includes('cds')) exam = 'Defence';
 
-          // Extract year from title if possible, otherwise use current year
-          const yearMatch = item.title.match(/20\d{2}/);
-          const year = yearMatch ? yearMatch[0] : new Date().getFullYear().toString();
+        await Promise.all(paperPromises);
+        summary[exam] += newPapersCount;
 
-          const paperData = {
-            exam: exam,
-            title: item.title,
-            year: year,
-            pdf_link: pdfLink || item.link // Fallback to page link if direct pdf not found
-          };
-
-          await createPaper(paperData);
-          totalNewPapers++;
-        }
+      } catch (error) {
+        console.error(`Failed to fetch papers from ${sourceUrl}:`, error.message);
       }
     }
-
-    if (totalNewPapers > 0) {
-      console.log(`✅ Paper scrape complete. Found ${totalNewPapers} new items across all sources.`);
-    }
-    return totalNewPapers;
-  } catch (error) {
-    console.error('❌ Error during papers scraping:', error.message);
-    return 0;
   }
+
+  console.log("New papers added:", summary);
+  return summary;
 }
 
-module.exports = { scrapeSarkariResult, scrapeNewPapers };
+module.exports = { scrapeSarkariResult, scanPapers };

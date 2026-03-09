@@ -13,25 +13,34 @@ async function handleReferEarn(ctx) {
 
     const referralCount = await getUserReferrals(telegramId);
     let botUsername;
-    if (ctx.botInfo && ctx.botInfo.username) {
-      botUsername = ctx.botInfo.username;
-    } else {
-      const me = await ctx.telegram.getMe();
-      botUsername = me.username;
+    try {
+      if (ctx.botInfo && ctx.botInfo.username) {
+        botUsername = ctx.botInfo.username;
+      } else {
+        const me = await ctx.telegram.getMe();
+        botUsername = me.username;
+      }
+    } catch (botError) {
+      console.error('Error getting bot info:', botError);
+      botUsername = 'SarkariAlertBot'; // Fallback if API fails
     }
     
     const referralLink = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
 
-    const message = `🎁 **Refer & Earn**\n\n` +
-      `👥 Total Referrals: ${referralCount}\n\n` +
-      `🔗 Apna Referral Link:\n${referralLink}\n\n` +
-      `📢 Is link ko apne dosto ke saath share karein!\n` +
-      `Jab wo is link se bot join karenge, aapki referral count badhegi.`;
+    const message = `🎁 **Refer & Earn Program**\n\n` +
+      `👥 **Aapke Total Referrals:** ${referralCount}\n\n` +
+      `🔗 **Aapka Personal Referral Link:**\n\`${referralLink}\` (Tap to copy)\n\n` +
+      `📢 **Kaise Kaam Karta Hai?**\n` +
+      `1. Is link ko apne dosto ke saath share karein.\n` +
+      `2. Jab wo is link se bot join karenge, aapki referral count badhegi.\n` +
+      `3. Har valid referral par aapko points/updates milenge!`;
+
+    const shareText = `🏛️ *Sarkari Naukri Alert Bot*\n\n🔥 Latest Govt Jobs, Admit Cards aur Results ki updates sabse pehle paane ke liye join karein!\n\n👇 Join now using my link:\n${referralLink}`;
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
-        [Markup.button.url('📤 Share Link', `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Sarkari Naukri Alert Bot - Latest Government Jobs!')}`)],
+        [Markup.button.url('📤 Share with Friends', `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`)],
         [Markup.button.callback('🏠 Main Menu', 'main_menu')]
       ])
     });

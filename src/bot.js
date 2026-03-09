@@ -9,8 +9,8 @@ const { handleStart, handleVerifyJoin, getMainMenu } = require('./controllers/st
 const { handleLatestJobs, handleSearchByExam, handleCategoryJobs, handleStateJobs, handleStateJobsList, handleEligibilityChecker, handleAdmitCards, handleResults, handleEligibilityResults } = require('./controllers/jobController');
 const { handleReferEarn } = require('./controllers/referralController');
 const { handleRemindMe } = require('./controllers/reminderController');
-const { handlePreviousPapers, handlePapersByExam } = require('./controllers/paperController');
-const { handleAddJob, handleAddPaper, handleAdminMessage, handleStats, adminSessions } = require('./controllers/adminController');
+const { handlePreviousPapers, handlePapersByExam, handlePapersByYear } = require('./controllers/paperController');
+const { handleAddJob, handleAddPaper, handleAdminMessage, handleStats, adminSessions, handleScanPapers, handleBroadcastJobs, handleCleanPapers } = require('./controllers/adminController');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -130,9 +130,21 @@ bot.action('previous_papers', checkMembership, async (ctx) => {
 });
 
 bot.action(/^papers_([a-z0-9_]+)$/, checkMembership, async (ctx) => {
-  const exam = ctx.match[1].toUpperCase();
-  await ctx.answerCbQuery();
-  await handlePapersByExam(ctx, exam);
+  const match = ctx.match[1];
+  const parts = match.split('_');
+  
+  if (parts.length >= 2) {
+    // It's papers_exam_year (e.g., papers_ssc_2024)
+    const exam = parts[0].toUpperCase();
+    const year = parts[1];
+    await ctx.answerCbQuery();
+    await handlePapersByYear(ctx, exam, year);
+  } else {
+    // It's just papers_exam (e.g., papers_ssc)
+    const exam = match.toUpperCase();
+    await ctx.answerCbQuery();
+    await handlePapersByExam(ctx, exam);
+  }
 });
 
 // Remind me
@@ -145,6 +157,9 @@ bot.action(/remind_(.+)/, checkMembership, async (ctx) => {
 bot.command('addjob', isAdmin, handleAddJob);
 bot.command('addpaper', isAdmin, handleAddPaper);
 bot.command('stats', isAdmin, handleStats);
+bot.command('scanpapers', isAdmin, handleScanPapers);
+bot.command('broadcastjobs', isAdmin, handleBroadcastJobs);
+bot.command('cleanpapers', isAdmin, handleCleanPapers);
 
 // Handle admin messages for job creation
 bot.on('text', async (ctx, next) => {
