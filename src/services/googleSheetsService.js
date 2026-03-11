@@ -17,15 +17,18 @@ async function getSheetData(range) {
   }
 
   try {
+    console.log(`📡 Fetching from Google Sheet: ${range}`);
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: range,
       key: API_KEY, // Using API Key for public sheets
     });
 
-    return response.data.values || [];
+    const values = response.data.values || [];
+    console.log(`✅ Fetched ${values.length} rows from ${range}`);
+    return values;
   } catch (error) {
-    console.error('❌ Error fetching data from Google Sheets:', error.message);
+    console.error(`❌ Error fetching data from range ${range}:`, error.message);
     return [];
   }
 }

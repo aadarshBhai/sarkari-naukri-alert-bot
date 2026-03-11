@@ -19,20 +19,30 @@ function normalizeLink(link) {
 
 /**
  * Fetch papers from Google Sheets and return them as Paper objects.
- * Sheet format: exam | title | year | pdf_link
+ * Sheet format (Sheet1): Title | Organization | Job Type | Vacancies | Qualification | Age Limit | Last Date | Category | State | Year | Exam Type | PDF Link
  * @returns {Promise<Array>} - List of normalized paper objects.
  */
 async function fetchPapersFromSheets() {
-  const rows = await getSheetData('Sheet1!A2:D'); // Assuming sheet name is 'Sheet1'
+  // Mapping based on inspection: index 12 is 'Question PDF'
+  const rows = await getSheetData('Sheet1!A2:M'); 
   if (!rows || rows.length === 0) return [];
 
-  return rows.map(row => ({
-    exam: row[0],
-    title: row[1],
-    year: row[2],
-    pdf_link: row[3],
-    source: 'Google Sheet'
-  }));
+  return rows
+    .filter(row => {
+      // index 2 is job_type, index 10 is exam_type, index 12 is pdf_link
+      const [, , job_type, , , , , , , , exam_type, , pdf_link] = row;
+      return pdf_link && (exam_type || (job_type && job_type.toLowerCase().includes('paper')));
+    })
+    .map(row => {
+      const [title, , , , , , , , , year, exam_type, , pdf_link] = row;
+      return {
+        exam: exam_type || 'Other',
+        title: title,
+        year: year || '2026',
+        pdf_link: pdf_link,
+        source: 'Google Sheet'
+      };
+    });
 }
 
 async function getAllPapers() {
@@ -40,9 +50,20 @@ async function getAllPapers() {
     const dbPapers = await Paper.find().sort({ year: -1, created_at: -1 });
     const sheetPapers = await fetchPapersFromSheets();
     
-    // Combine both sources, but prefer Google Sheets if there's overlap? 
-    // For now, just merge them.
-    return [...sheetPapers, ...dbPapers];
+    // Combine and deduplicate by normalized link
+    const allPapers = [...sheetPapers, ...dbPapers];
+    const uniquePapers = [];
+    const seenLinks = new Set();
+
+    for (const paper of allPapers) {
+      const normalized = normalizeLink(paper.pdf_link);
+      if (!seenLinks.has(normalized)) {
+        seenLinks.add(normalized);
+        uniquePapers.push(paper);
+      }
+    }
+
+    return uniquePapers;
   } catch (error) {
     console.error('Error in getAllPapers:', error);
     throw error;
@@ -54,7 +75,19 @@ async function getPapersByExam(exam) {
     const dbPapers = await Paper.find({ exam: new RegExp(`^${exam}$`, 'i') }).sort({ year: -1, created_at: -1 });
     const sheetPapers = (await fetchPapersFromSheets()).filter(p => p.exam.toLowerCase() === exam.toLowerCase());
     
-    return [...sheetPapers, ...dbPapers];
+    const allPapers = [...sheetPapers, ...dbPapers];
+    const uniquePapers = [];
+    const seenLinks = new Set();
+
+    for (const paper of allPapers) {
+      const normalized = normalizeLink(paper.pdf_link);
+      if (!seenLinks.has(normalized)) {
+        seenLinks.add(normalized);
+        uniquePapers.push(paper);
+      }
+    }
+
+    return uniquePapers;
   } catch (error) {
     console.error('Error in getPapersByExam:', error);
     throw error;
@@ -72,7 +105,19 @@ async function getPapersByExamAndYear(exam, year) {
       p.exam.toLowerCase() === exam.toLowerCase() && p.year === year
     );
     
-    return [...sheetPapers, ...dbPapers];
+    const allPapers = [...sheetPapers, ...dbPapers];
+    const uniquePapers = [];
+    const seenLinks = new Set();
+
+    for (const paper of allPapers) {
+      const normalized = normalizeLink(paper.pdf_link);
+      if (!seenLinks.has(normalized)) {
+        seenLinks.add(normalized);
+        uniquePapers.push(paper);
+      }
+    }
+
+    return uniquePapers;
   } catch (error) {
     console.error('Error in getPapersByExamAndYear:', error);
     throw error;

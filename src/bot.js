@@ -10,7 +10,7 @@ const { handleLatestJobs, handleSearchByExam, handleCategoryJobs, handleStateJob
 const { handleReferEarn } = require('./controllers/referralController');
 const { handleRemindMe } = require('./controllers/reminderController');
 const { handlePreviousPapers, handlePapersByExam, handlePapersByYear } = require('./controllers/paperController');
-const { handleAddJob, handleAddPaper, handleAdminMessage, handleStats, adminSessions, handleScanPapers, handleBroadcastJobs, handleCleanPapers } = require('./controllers/adminController');
+const { handleAddJob, handleAddPaper, handleAdminMessage, handleStats, adminSessions, handleScanPapers, handleBroadcastJobs, handleCleanPapers, handleSyncSheets } = require('./controllers/adminController');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -160,6 +160,7 @@ bot.command('stats', isAdmin, handleStats);
 bot.command('scanpapers', isAdmin, handleScanPapers);
 bot.command('broadcastjobs', isAdmin, handleBroadcastJobs);
 bot.command('cleanpapers', isAdmin, handleCleanPapers);
+bot.command('syncsheets', isAdmin, handleSyncSheets);
 
 // Handle admin messages for job creation
 bot.on('text', async (ctx, next) => {

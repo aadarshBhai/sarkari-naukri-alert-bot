@@ -265,13 +265,28 @@ async function handleCleanPapers(ctx) {
   }
 }
 
+const { syncJobsFromSheets } = require('../services/jobSyncService');
+
+async function handleSyncSheets(ctx) {
+  await ctx.reply('🔄 Syncing from Google Sheets...');
+  try {
+    // syncJobsFromSheets expects an object with telegram property
+    await syncJobsFromSheets({ telegram: ctx.telegram }); 
+    await ctx.reply('✅ Sheet sync completed! Check logs for details.');
+  } catch (error) {
+    await ctx.reply(`❌ Sync failed: ${error.message}`);
+  }
+}
+
 module.exports = {
   handleAddJob,
   handleAddPaper,
   handleAdminMessage,
   handleStats,
-  adminSessions,
   handleScanPapers,
   handleBroadcastJobs,
-  handleCleanPapers
+  handleCleanPapers,
+  handleSyncSheets,
+  adminSessions,
+  postJobToChannel
 };

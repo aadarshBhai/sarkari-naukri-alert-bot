@@ -5,18 +5,22 @@ const { postJobToChannel } = require('../controllers/adminController'); // We mi
 
 /**
  * Sync jobs from Google Sheets to DB and Channel.
- * Sheet format: title | organization | job_type | vacancies | qualification | age_limit | last_date | category | state | official_link
+ * Sheet format (Sheet1): Title | Organization | Job Type | Vacancies | Qualification | Age Limit | Last Date | Category | State | Year | Exam Type | Official Link
  */
 async function syncJobsFromSheets(bot) {
   console.log('🔄 Checking Google Sheets for new jobs...');
-  const rows = await getSheetData('Sheet2!A2:J');
+  // Fetching up to 13 columns to include 'Question PDF' as the link
+  const rows = await getSheetData('Sheet1!A2:M'); 
   if (!rows || rows.length === 0) return;
 
   let newJobsCount = 0;
 
   for (const row of rows) {
-    const [title, organization, job_type, vacancies, qualification, age_limit, last_date, category, state, official_link] = row;
+    // Mapping based on the latest sheet inspection:
+    // 0:Title, 1:Org, 2:Type, 3:Vacancies, 4:Qual, 5:Age, 6:LastDate, 7:Category, 8:State, 9:Year, 10:ExamType, 11:Year2, 12:Link
+    const [title, organization, job_type, vacancies, qualification, age_limit, last_date, category, state, year, exam_type, year2, official_link] = row;
 
+    // We use the 'Question PDF' column (index 12) as the official_link for jobs too if it's the only link available.
     if (!title || !official_link) continue;
 
     try {
@@ -25,23 +29,22 @@ async function syncJobsFromSheets(bot) {
         console.log(`✨ New job found in sheet: ${title}`);
         const jobData = {
           title,
-          organization,
-          job_type: job_type || 'job',
-          vacancies,
-          qualification,
-          age_limit,
+          organization: organization || 'Government of India',
+          job_type: (job_type || 'job').toLowerCase(),
+          vacancies: vacancies || 'Check Notification',
+          qualification: qualification || 'Check Notification',
+          age_limit: age_limit || 'As per rules',
           last_date: last_date ? new Date(last_date) : null,
-          category: category || 'Other',
+          category: category || 'General',
           state: state || 'All India',
           official_link,
-          description: `Sheet update: ${title}`
+          description: `Sheet update: ${title} (${year || '2026'})`
         };
 
         const newJob = await createJob(jobData);
         
-        // Post to channel (we need a mock ctx or just the bot instance)
+        // Post to channel
         try {
-          // Refactored posting logic that doesn't strictly need ctx if we use bot.telegram directly
           await postToChannelDirectly(bot, newJob);
           newJobsCount++;
         } catch (postError) {
